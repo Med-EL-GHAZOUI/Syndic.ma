@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -71,6 +71,16 @@ export class AuthService {
     const user = await this.users.findOneBy({ id: row.userId });
     if (!user || !user.active) throw new UnauthorizedException('Invalid refresh token');
     return this.issue(user, row.family);
+  }
+
+  /** Changing the password revokes EVERY refresh token of the user (all devices are signed out). */
+  async changePassword(userId: string, current: string, next: string): Promise<void> {
+    const user = await this.users.findOneBy({ id: userId });
+    if (!user || !(await bcrypt.compare(current, user.passwordHash))) throw new UnauthorizedException('Current password is incorrect');
+    if (current === next) throw new BadRequestException('The new password must differ from the current one');
+    await this.users.update(user.id, { passwordHash: await bcrypt.hash(next, COST) });
+    await this.tokens.update({ userId: user.id, revokedAt: IsNull() }, { revokedAt: new Date() });
+    await this.audit.log(user, 'update', 'users', user.id, 'password changed');
   }
 
   async logout(presented: string): Promise<void> {

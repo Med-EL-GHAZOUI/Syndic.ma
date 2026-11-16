@@ -6,6 +6,7 @@ process.env.RUN_MIGRATIONS = 'true';
 process.env.THROTTLE_AUTH_LIMIT = '100000';
 process.env.THROTTLE_LIMIT = '1000000';
 process.env.BCRYPT_COST = '4'; // fast hashing in tests only (production enforces >= 10)
+process.env.STORAGE_DIR = require('path').join(require('os').tmpdir(), 'syndicma-e2e-storage');
 
 jest.setTimeout(120_000);
 

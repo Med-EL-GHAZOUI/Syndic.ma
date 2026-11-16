@@ -21,8 +21,8 @@ Status legend: ✅ implemented and covered by tests · 🟡 implemented, not yet
 
 ## Known gaps (do before production)
 - ⬜ **Row-level security** in PostgreSQL as defence in depth (policy on `org_id` with `SET LOCAL app.org_id`).
-- ⬜ **Secure file uploads** (documents module not yet in the backend): size/type allow-list, magic-number sniffing, AV scan, private object storage with signed URLs, random keys, no inline rendering.
-- ⬜ Password reset, e-mail verification, **MFA** for admin roles, password-breach check, account lockout policy.
+- 🟡 **Uploads**: implemented and tested — 10 MB cap, extension allow-list that must match the file's magic bytes (client MIME/name never trusted), random storage keys, sanitized display names, always `attachment` + `nosniff`, access-controlled and audited downloads. **Still missing:** antivirus scan, zip-bomb/OOXML deep inspection, private object storage with signed URLs (local disk today), per-tenant quotas.
+- 🟡 Password change implemented (current password required, strength ≥ 12, **all sessions revoked**). ⬜ Password *reset* by e-mail, e-mail verification, **MFA** for admin roles, breach check, account lockout.
 - ⬜ Secrets in a manager (Vault / cloud secrets), key rotation (JWT key id), separate DB roles (migrator vs app vs read-only) and TLS to the DB (`DATABASE_SSL=true`).
 - ⬜ Structured logging with PII redaction, alerting, security headers review for the Angular app (CSP).
 - ⬜ Backups: automated, encrypted, **restore tested** (see DEPLOYMENT.md).
@@ -37,5 +37,8 @@ This is engineering guidance, **not legal advice**. Have a Moroccan lawyer / the
 - **Payments** — recorded payments are bookkeeping entries, not proof of bank settlement. Using a payment provider requires checking licensing/PCI scope, KYC and tax/invoicing obligations (receipt wording and numbering requirements may apply).
 - **Electronic communications** — e-mail/SMS/WhatsApp notifications need an opt-in basis and provider data-processing terms.
 
+## Incident found by the tests (migration drift)
+`typeorm migration:generate` emitted `DROP CONSTRAINT` for every hand-written CHECK (financial amounts, statuses, receipt/status coherence) because they are not declared in the entities. The e2e suite caught it (a raw `UPDATE charges SET amount = -1` succeeded). Fixed by removing the drops, adding the idempotent `RepairIntegrity` migration, centralising the rules in `src/migrations/integrity.ts` and adding `schema-guard.e2e-spec.ts`, which fails if any rule or trigger is missing. **Rule: never apply a generated migration without reading it.**
+
 ## Security testing in the repo
-`backend/test/e2e/auth.e2e-spec.ts`, `isolation.e2e-spec.ts`, `finance.e2e-spec.ts` — 61 integration tests against real PostgreSQL covering authentication, refresh rotation/reuse, immediate revocation, RBAC per role, cross-tenant IDOR attempts, scope, input hardening, SQL-injection strings, concurrency and database-level guarantees.
+`backend/test/e2e/*.e2e-spec.ts` and `backend/test/unit/*` — 130 tests (auth, isolation, finance, community/uploads, schema guard) against real PostgreSQL covering authentication, refresh rotation/reuse, immediate revocation, RBAC per role, cross-tenant IDOR attempts, scope, input hardening, SQL-injection strings, concurrency and database-level guarantees.

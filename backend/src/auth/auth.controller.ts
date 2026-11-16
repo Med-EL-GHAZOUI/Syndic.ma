@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthUser, CurrentUser, Public } from '../common/auth-user';
-import { LoginDto, RefreshDto } from './auth.dto';
+import { ChangePasswordDto, LoginDto, RefreshDto } from './auth.dto';
 import { AuthService } from './auth.service';
 
 // Brute-force protection: per-IP limit on credential endpoints.
@@ -34,6 +34,14 @@ export class AuthController {
   @Post('logout')
   async logout(@Body() dto: RefreshDto) {
     await this.auth.logout(dto.refreshToken);
+  }
+
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: LIMIT, ttl: 60_000 } })
+  @HttpCode(204)
+  @Post('change-password')
+  async changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
+    await this.auth.changePassword(user.id, dto.currentPassword, dto.newPassword);
   }
 
   @ApiBearerAuth()

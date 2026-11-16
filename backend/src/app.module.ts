@@ -7,6 +7,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { Public } from './common/auth-user';
 import { CommonModule } from './common/common.module';
+import { CommunityModule } from './community/community.module';
 import { JwtAuthGuard, PermissionsGuard } from './common/guards';
 import { ENTITIES } from './entities';
 import { FinanceModule } from './finance/finance.module';
@@ -49,6 +50,7 @@ function validateEnv(env: Record<string, unknown>) {
     PropertiesModule,
     FinanceModule,
     OpsModule,
+    CommunityModule,
     AdminModule,
   ],
   controllers: [HealthController],
