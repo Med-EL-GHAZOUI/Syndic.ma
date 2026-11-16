@@ -27,11 +27,11 @@ Auth `core/auth.js` · Organizations `pages/platform.js` · Residences/buildings
 - [x] **Phase 1** vanilla frontend prototype
 - [~] **Phase 2** quality — manual browser checks done (see README); automated tests, a11y audit, device testing pending
 - [x] **Phase 3 (draft)** architecture & UML → [ARCHITECTURE.md](ARCHITECTURE.md) (needs review)
-- [ ] **Phase 4** Angular + NestJS + PostgreSQL + TypeORM, JWT + refresh rotation, RBAC, Swagger, migrations, jobs, tests
-- [ ] **Phase 5** auditable finance: allocations, reversals, reconciliation, statements
-- [ ] **Phase 6** security & privacy (Law 09-08 / CNDP, Law 18-00 as amended by 106-12 — **needs legal review**)
-- [ ] **Phase 7** E2E, Docker, CI/CD, monitoring, backups
-- [ ] **Phase 8** payment gateway (after provider/compliance check), email/SMS/WhatsApp, PWA, AI assistant
+- [~] **Phase 4** backend done for: auth (JWT + refresh rotation), RBAC, tenant isolation, residences/buildings/units/residents, finance, expenses, providers, complaints, announcements, users/orgs/audit, Swagger, migrations, 73 tests. **Not done:** Angular frontend (the vanilla prototype is still the UI and is not wired to the API), assemblies/documents/maintenance endpoints, file storage, background jobs
+- [~] **Phase 5** auditable finance implemented in the API (allocations, partial payments, reversals, receipts, statements, DB-level guarantees, concurrency tests). **Not done:** bank reconciliation / statement import, period closing, tax/invoice rules
+- [~] **Phase 6** threat model + legal flags written ([SECURITY.md](SECURITY.md)); throttling, input hardening, tenant-isolation tests done. **Not done:** RLS, secure uploads, MFA/password reset, privacy tooling (export/erasure/retention), pen test. **Legal review required** (Law 09-08 / CNDP, Law 18-00 as amended by 106-12)
+- [~] **Phase 7** Dockerfile (smoke-tested), CI workflow (not yet run on GitHub), [DEPLOYMENT.md](DEPLOYMENT.md). **Not done:** browser E2E, staging/prod environments, monitoring, tested backup/restore
+- [ ] **Phase 8** payment gateway (needs provider + compliance verification first), e-mail/SMS/WhatsApp, PWA, AI assistant — not started
 
 ## Decisions log
 - D1 Hash router + ES modules, no build step, to stay runnable with any static server.
