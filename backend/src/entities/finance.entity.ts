@@ -20,8 +20,8 @@ export class CallForFunds {
   @Column(money('amount_per_unit')) amountPerUnit: number;
   @Column({ type: 'varchar', default: 'draft' }) status: CallStatus;
   @Column({ name: 'issued_at', type: 'timestamptz', nullable: true }) issuedAt: Date | null;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 /** A charge is immutable once created. What has been paid is DERIVED from allocations. */
@@ -35,7 +35,7 @@ export class Charge {
   @Column() label: string;
   @Column(money('amount')) amount: number;
   @Column({ name: 'due_date', type: 'date' }) dueDate: string;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
 }
 
 export type PaymentStatus = 'pending' | 'recorded' | 'reversed' | 'rejected';
@@ -67,8 +67,8 @@ export class Payment {
   @Column({ name: 'confirmed_by', type: 'uuid', nullable: true }) confirmedBy: string | null;
   @Column({ name: 'reason', type: 'varchar', nullable: true }) reason: string | null;
   @Column({ name: 'reversed_at', type: 'timestamptz', nullable: true }) reversedAt: Date | null;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 @Entity('allocations')

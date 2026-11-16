@@ -42,3 +42,17 @@ export interface StatementLine { kind: 'charge' | 'payment'; date: string; label
 export interface Statement { unitId: string; balance: number; lines: StatementLine[] }
 
 export interface FinanceSummary { charged: number; collected: number; outstanding: number; overdue: number; expensesPaid: number; collectionRate: number }
+
+export type ExpenseStatus = 'pending' | 'approved' | 'paid' | 'cancelled';
+export interface Expense { id: string; residenceId: string; category: string; label: string; amount: number; date: string; invoiceRef?: string; providerId: string | null; status: ExpenseStatus; cancelReason: string | null }
+export interface Provider { id: string; name: string; category: string; active: boolean }
+
+export type ComplaintStatus = 'new' | 'in_progress' | 'resolved' | 'closed';
+export interface Complaint {
+  id: string; residenceId: string; unitId: string | null; authorId: string; title: string; category: string; priority: string;
+  description: string; status: ComplaintStatus; comments: { byId: string; byName: string; at: string; text: string }[]; createdAt: string;
+}
+
+export interface Announcement { id: string; residenceId: string; title: string; body: string; category: string; audience: string; pinned: boolean; authorName: string; publishedAt: string }
+export interface AuditEntry { id: string; userName?: string; role: string | null; action: string; entity: string; summary: string; createdAt: string }
+export interface OrgUser { id: string; name: string; email: string; role: Role; active: boolean; lastLoginAt: string | null }

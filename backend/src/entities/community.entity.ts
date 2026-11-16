@@ -18,8 +18,8 @@ export class WorkOrder {
   @Column({ type: 'varchar', default: 'planned' }) status: WorkStatus;
   @Column({ type: 'text', nullable: true }) description: string | null;
   @Column({ type: 'jsonb', default: () => "'[]'" }) notes: { byId: string; byName: string; at: string; text: string }[];
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 export type AssemblyStatus = 'planned' | 'convened' | 'held' | 'cancelled';
@@ -41,8 +41,8 @@ export class Assembly {
   @Column({ type: 'jsonb', default: () => "'[]'" }) attendance: Attendance[];
   @Column({ type: 'jsonb', default: () => "'[]'" }) resolutions: Resolution[];
   @Column({ type: 'text', default: '' }) minutes: string;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 @Entity('documents')
@@ -63,5 +63,5 @@ export class DocumentFile {
   @Column() mime: string;
   @Column() sha256: string;
   @Column({ name: 'uploaded_by', type: 'uuid' }) uploadedBy: string;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
 }

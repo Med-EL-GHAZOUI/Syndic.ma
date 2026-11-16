@@ -14,7 +14,7 @@ export class Provider {
   @Column({ nullable: true }) ice?: string;
   @Column({ type: 'int', default: 3 }) rating: number;
   @Column({ default: true }) active: boolean;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
 }
 
 export type ExpenseStatus = 'pending' | 'approved' | 'paid' | 'cancelled';
@@ -33,8 +33,8 @@ export class Expense {
   @Column({ type: 'varchar', default: 'pending' }) status: ExpenseStatus;
   @Column({ name: 'paid_at', type: 'timestamptz', nullable: true }) paidAt: Date | null;
   @Column({ name: 'cancel_reason', type: 'varchar', nullable: true }) cancelReason: string | null;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 export type ComplaintStatus = 'new' | 'in_progress' | 'resolved' | 'closed';
@@ -52,8 +52,8 @@ export class Complaint {
   @Column({ type: 'text' }) description: string;
   @Column({ type: 'varchar', default: 'new' }) status: ComplaintStatus;
   @Column({ type: 'jsonb', default: () => "'[]'" }) comments: { byId: string; byName: string; at: string; text: string }[];
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 @Entity('announcements')
@@ -68,5 +68,5 @@ export class Announcement {
   @Column({ default: 'all' }) audience: string;
   @Column({ default: false }) pinned: boolean;
   @Column({ name: 'author_name' }) authorName: string;
-  @CreateDateColumn({ name: 'published_at' }) publishedAt: Date;
+  @CreateDateColumn({ name: 'published_at', type: 'timestamptz' }) publishedAt: Date;
 }

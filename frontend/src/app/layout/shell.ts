@@ -13,6 +13,11 @@ const NAV: NavItem[] = [
   { module: 'units', path: '/units', icon: 'door', key: 'nav.units' },
   { module: 'finance', path: '/finance', icon: 'wallet', key: 'nav.finance', residentKey: 'nav.finance.mine' },
   { module: 'payments', path: '/payments', icon: 'card', key: 'nav.payments', residentKey: 'nav.payments.mine' },
+  { module: 'expenses', path: '/expenses', icon: 'receipt', key: 'nav.expenses' },
+  { module: 'complaints', path: '/complaints', icon: 'info', key: 'nav.complaints', residentKey: 'nav.complaints.mine' },
+  { module: 'announcements', path: '/announcements', icon: 'send', key: 'nav.announcements' },
+  { module: 'users', path: '/users', icon: 'door', key: 'nav.users' },
+  { module: 'audit', path: '/audit', icon: 'lock', key: 'nav.audit' },
 ];
 
 @Component({

@@ -13,8 +13,8 @@ export class Organization {
   @Column({ nullable: true }) phone?: string;
   @Column({ default: 'starter' }) plan: string;
   @Column({ type: 'varchar', default: 'trial' }) status: OrgStatus;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 @Entity('users')
@@ -32,8 +32,8 @@ export class User {
   @Column({ name: 'residence_ids', type: 'uuid', array: true, default: () => "'{}'" }) residenceIds: string[];
   @Column({ name: 'provider_id', type: 'uuid', nullable: true }) providerId: string | null;
   @Column({ name: 'last_login_at', type: 'timestamptz', nullable: true }) lastLoginAt: Date | null;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 /**
@@ -50,5 +50,5 @@ export class RefreshToken {
   @Column({ name: 'expires_at', type: 'timestamptz' }) expiresAt: Date;
   @Column({ name: 'used_at', type: 'timestamptz', nullable: true }) usedAt: Date | null;
   @Column({ name: 'revoked_at', type: 'timestamptz', nullable: true }) revokedAt: Date | null;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
 }

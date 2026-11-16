@@ -308,5 +308,10 @@ describe('Finance: calls, charges, payments, reversals', () => {
       expect(has('reject', 'payments')).toBe(true);
       expect(has('declare', 'payments')).toBe(true);
     });
+
+    it('audit timestamps are real instants: recent entries are within a few seconds of now (no UTC-offset shift)', async () => {
+      const rows = (await http(app).get('/api/audit?limit=5').set(as('a.syndic_admin')).expect(200)).body as { createdAt: string }[];
+      for (const r of rows) expect(Math.abs(Date.now() - new Date(r.createdAt).getTime())).toBeLessThan(120_000);
+    });
   });
 });

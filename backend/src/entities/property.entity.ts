@@ -13,8 +13,8 @@ export class Residence {
   @Column() address: string;
   @Column({ name: 'year_built', type: 'int', nullable: true }) yearBuilt: number | null;
   @Column({ name: 'monthly_fee', type: 'numeric', precision: 14, scale: 2, nullable: true, transformer: moneyTransformer }) monthlyFee: number | null;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 @Entity('buildings')
@@ -26,7 +26,7 @@ export class Building {
   @Column() name: string;
   @Column({ type: 'int' }) floors: number;
   @Column({ default: false }) elevator: boolean;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
 }
 
 export type UnitType = 'apartment' | 'shop' | 'office' | 'parking';
@@ -45,8 +45,8 @@ export class Unit {
   @Column({ type: 'numeric', precision: 8, scale: 2, transformer: { to: (v: number) => v, from: (v: string) => Number(v) } }) area: number;
   /** Share of common parts (millièmes). Sum per residence is expected to be 1000. */
   @Column({ type: 'int' }) tantiemes: number;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }
 
 export type ResidentType = 'owner' | 'tenant';
@@ -68,6 +68,6 @@ export class Resident {
   @Column({ type: 'date', nullable: true }) until: string | null;
   @Column({ default: true }) active: boolean;
   @Column({ name: 'lives_in', default: true }) livesIn: boolean;
-  @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }

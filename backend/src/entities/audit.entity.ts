@@ -12,5 +12,5 @@ export class AuditLog {
   @Column() entity: string;
   @Column({ name: 'entity_id', type: 'varchar', nullable: true }) entityId: string | null;
   @Column({ type: 'text', default: '' }) summary: string;
-  @Index() @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
+  @Index() @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
 }

@@ -24,6 +24,12 @@ describe('Schema guard (database-level integrity)', () => {
     expect(rows).toHaveLength(1);
   });
 
+  it('no timestamp column is time-zone-less (it shifted every date by the server offset)', async () => {
+    const rows = await ds.query(`SELECT table_name || '.' || column_name AS col FROM information_schema.columns
+      WHERE table_schema = 'public' AND data_type = 'timestamp without time zone' AND table_name <> 'migrations'`);
+    expect(rows).toEqual([]);
+  });
+
   it('every table with an org_id column is indexed on it (tenant filter performance)', async () => {
     const rows = await ds.query(`
       SELECT c.table_name FROM information_schema.columns c

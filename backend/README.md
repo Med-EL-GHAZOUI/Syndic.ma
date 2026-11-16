@@ -24,7 +24,7 @@ docker compose exec -T db psql -U syndicma -d syndicma -c "CREATE DATABASE syndi
 npm test            # unit (no DB)
 npm run test:e2e    # integration against PostgreSQL (DATABASE_URL_TEST overrides the default)
 ```
-Last local run: **130 tests passed** (unit + e2e, fresh database).
+Last local run: **132 tests passed** (unit + e2e, fresh database).
 
 ## Design rules
 - Every tenant table has `org_id`; all access goes through `ScopeService`; out-of-scope ⇒ 404.
