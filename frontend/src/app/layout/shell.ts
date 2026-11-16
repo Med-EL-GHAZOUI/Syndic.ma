@@ -13,7 +13,11 @@ const NAV: NavItem[] = [
   { module: 'units', path: '/units', icon: 'door', key: 'nav.units' },
   { module: 'finance', path: '/finance', icon: 'wallet', key: 'nav.finance', residentKey: 'nav.finance.mine' },
   { module: 'payments', path: '/payments', icon: 'card', key: 'nav.payments', residentKey: 'nav.payments.mine' },
+  { module: 'reconciliation', path: '/reconciliation', icon: 'check', key: 'nav.reconciliation' },
   { module: 'expenses', path: '/expenses', icon: 'receipt', key: 'nav.expenses' },
+  { module: 'maintenance', path: '/maintenance', icon: 'door', key: 'nav.maintenance', residentKey: 'nav.maintenance.mine' },
+  { module: 'documents', path: '/documents', icon: 'receipt', key: 'nav.documents' },
+  { module: 'providers', path: '/providers', icon: 'building', key: 'nav.providers' },
   { module: 'complaints', path: '/complaints', icon: 'info', key: 'nav.complaints', residentKey: 'nav.complaints.mine' },
   { module: 'announcements', path: '/announcements', icon: 'send', key: 'nav.announcements' },
   { module: 'users', path: '/users', icon: 'door', key: 'nav.users' },
@@ -75,7 +79,9 @@ export class Shell {
   protected readonly role = computed(() => this.i18n.tl('role', this.auth.user()?.role));
 
   protected label(item: NavItem): string {
-    return isResident(this.auth.user()?.role) && item.residentKey ? item.residentKey : item.key;
+    const role = this.auth.user()?.role;
+    // residents and providers see "my ..." wording ("Mes charges", "Mes interventions")
+    return (isResident(role) || role === 'provider') && item.residentKey ? item.residentKey : item.key;
   }
 
   protected toggleTheme(): void {

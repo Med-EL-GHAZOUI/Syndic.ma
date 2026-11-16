@@ -56,3 +56,14 @@ export interface Complaint {
 export interface Announcement { id: string; residenceId: string; title: string; body: string; category: string; audience: string; pinned: boolean; authorName: string; publishedAt: string }
 export interface AuditEntry { id: string; userName?: string; role: string | null; action: string; entity: string; summary: string; createdAt: string }
 export interface OrgUser { id: string; name: string; email: string; role: Role; active: boolean; lastLoginAt: string | null }
+
+export type BankLineStatus = 'unmatched' | 'matched' | 'ignored';
+export interface BankSuggestion { paymentId: string; receiptNo: string | null; payerName: string; date: string; reference?: string; score: number }
+export interface BankLine { id: string; residenceId: string; bookingDate: string; amount: number; label: string; reference: string; status: BankLineStatus; paymentId: string | null; note: string | null; suggestions: BankSuggestion[] }
+export interface ReconciliationSummary { unmatchedLines: number; unmatchedAmount: number; unverifiedPayments: number; unverifiedAmount: number; verifiedPayments: number }
+export interface Closure { id: string; residenceId: string; closedThrough: string }
+
+export type WorkStatus = 'planned' | 'in_progress' | 'done' | 'cancelled';
+export interface WorkOrder { id: string; residenceId: string; title: string; type: 'corrective' | 'preventive'; providerId: string; scheduledDate: string; estimatedCost: number | null; actualCost: number | null; status: WorkStatus; description: string | null }
+export interface DocumentItem { id: string; residenceId: string; name: string; category: string; visibility: string; fileName: string; size: number; mime: string; createdAt: string }
+export interface ProviderFull { id: string; name: string; category: string; city?: string; contactName?: string; phone?: string; email?: string; ice?: string; rating: number; active: boolean }

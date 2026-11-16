@@ -1,14 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { I18nService, TPipe } from '../core/i18n.service';
 import { IconComponent } from '../shared/icon';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, TPipe, IconComponent],
+  imports: [ReactiveFormsModule, RouterLink, TPipe, IconComponent],
   template: `
     <div class="login">
       <aside class="login-aside">
@@ -37,7 +37,7 @@ import { IconComponent } from '../shared/icon';
               <input class="input" id="email" type="email" dir="ltr" autocomplete="username" formControlName="email" [attr.aria-invalid]="invalid('email')" />
             </div>
             <div class="field">
-              <label for="password">{{ 'login.password' | t }}</label>
+              <div class="row between"><label for="password">{{ 'login.password' | t }}</label><a class="small" routerLink="/forgot-password">{{ 'login.forgot' | t }}</a></div>
               <input class="input" id="password" type="password" dir="ltr" autocomplete="current-password" formControlName="password" [attr.aria-invalid]="invalid('password')" />
             </div>
             <button type="submit" class="btn btn-primary btn-lg btn-block" [disabled]="busy()">{{ 'login.submit' | t }}</button>
