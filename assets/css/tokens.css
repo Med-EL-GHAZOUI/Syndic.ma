@@ -1,0 +1,109 @@
+/* Syndic.ma — design tokens
+   Palette inspired by Moroccan zellige: deep emerald, terracotta, warm sand. */
+:root {
+  --brand-900: #0a3b33;
+  --brand-800: #0c4a3f;
+  --brand-700: #0f5c4d;
+  --brand-600: #14735f;
+  --brand-500: #1b8c74;
+  --brand-200: #b9dfd3;
+  --brand-100: #d9efe8;
+  --brand-50: #eef7f4;
+
+  --accent-700: #9a4f22;
+  --accent-600: #b4622f;
+  --accent-500: #c97b45;
+  --accent-100: #f6e3d3;
+  --gold-500: #c9a227;
+
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --surface-2: #faf8f3;
+  --border: #e4dfd3;
+  --border-strong: #cfc8b8;
+  --text: #18211d;
+  --text-2: #48544e;
+  --muted: #66716a;
+
+  --success: #1e7f56;
+  --success-bg: #e3f4eb;
+  --warning: #8f5c0c;
+  --warning-bg: #fbefd6;
+  --danger: #b3362b;
+  --danger-bg: #fbe6e3;
+  --info: #235fa4;
+  --info-bg: #e2edf9;
+  --neutral-bg: #eeebe3;
+
+  --sidebar-bg: var(--brand-900);
+  --sidebar-text: #d5e6e0;
+  --sidebar-muted: #8fb3a8;
+  --sidebar-active: rgba(255, 255, 255, 0.1);
+
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-ar: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-md: 0.9375rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 2rem;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 72px;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(24, 33, 29, 0.06);
+  --shadow: 0 4px 14px rgba(24, 33, 29, 0.08);
+  --shadow-lg: 0 18px 48px rgba(24, 33, 29, 0.18);
+
+  --sidebar-w: 264px;
+  --topbar-h: 64px;
+  --focus: 0 0 0 3px rgba(27, 140, 116, 0.35);
+
+  /* 8-point star lattice, used very subtly on dark brand surfaces */
+  --zellige: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.07' stroke-width='1'%3E%3Cpath d='M28 4l7 17 17 7-17 7-7 17-7-17-17-7 17-7z'/%3E%3Cpath d='M11 11l34 34M45 11L11 45'/%3E%3Crect x='16' y='16' width='24' height='24'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1614;
+  --surface: #161f1c;
+  --surface-2: #1b2623;
+  --border: #2a3733;
+  --border-strong: #3b4a45;
+  --text: #e9efec;
+  --text-2: #c0cbc6;
+  --muted: #94a39c;
+
+  --brand-700: #2aa58a;
+  --brand-600: #23957c;
+  --brand-500: #37b89b;
+  --brand-200: #24524a;
+  --brand-100: #1c3d37;
+  --brand-50: #172d29;
+  --accent-600: #e09a66;
+  --accent-100: #3f2c1f;
+
+  --success: #5fce9b;
+  --success-bg: #173528;
+  --warning: #e7b85a;
+  --warning-bg: #3a2e14;
+  --danger: #f08a7f;
+  --danger-bg: #40201c;
+  --info: #7fb4ee;
+  --info-bg: #1a2e45;
+  --neutral-bg: #25302d;
+
+  --sidebar-bg: #0b1210;
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+}

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Syndic.ma — Gestion de copropriété au Maroc</title>
+  <meta name="description" content="Syndic.ma : plateforme de gestion de copropriété pour le Maroc — charges, paiements, assemblées, réclamations. Prototype de démonstration.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
+  <script>
+    try {
+      var l = localStorage.getItem('syndicma.lang') || 'fr';
+      document.documentElement.lang = l;
+      document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.dataset.theme = localStorage.getItem('syndicma.theme') || 'light';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu / تخطي إلى المحتوى</a>
+
+  <header class="l-nav">
+    <div class="l-wrap">
+      <a class="brand" href="index.html">
+        <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.900 7.100L22 12l-7.100 2.900L12 22l-2.900-7.100L2 12l7.100-2.900z"/></svg></span>
+        <span>Syndic<small>.ma</small></span>
+      </a>
+      <nav class="l-links" aria-label="Sections">
+        <a href="#features" data-i18n="nav.features">Fonctionnalités</a>
+        <a href="#roles" data-i18n="nav.roles">Pour qui</a>
+        <a href="#pricing" data-i18n="nav.pricing">Tarifs</a>
+      </nav>
+      <span class="spacer"></span>
+      <div class="lang-switch" role="group" aria-label="Langue / اللغة">
+        <button type="button" data-lang="fr" lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="ar" lang="ar" aria-pressed="false">ع</button>
+      </div>
+      <a class="btn btn-primary btn-sm" href="app.html#/login" data-i18n="nav.login">Se connecter</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="l-wrap">
+        <div>
+          <h1 data-i18n="hero.title">La gestion de copropriété au Maroc, enfin simple et transparente.</h1>
+          <p class="lead" data-i18n="hero.lead">Appels de fonds, paiements, dépenses, assemblées générales, réclamations et documents : un seul outil pour les sociétés de syndic, leurs équipes et les résidents.</p>
+          <div class="cta">
+            <a class="btn btn-accent btn-lg" href="app.html#/login" data-i18n="hero.cta1">Explorer la démo</a>
+            <a class="btn btn-secondary btn-lg" href="#features" data-i18n="hero.cta2">Découvrir les modules</a>
+          </div>
+          <small data-i18n="hero.small">Prototype de démonstration — données fictives, paiements et authentification simulés.</small>
+        </div>
+        <div class="mock" aria-hidden="true">
+          <div class="mock-row">
+            <div class="mock-kpi"><span data-i18n="mock.rate">Recouvrement</span><strong dir="ltr">86 %</strong></div>
+            <div class="mock-kpi"><span data-i18n="mock.collected">Encaissé</span><strong dir="ltr">248 400 MAD</strong></div>
+            <div class="mock-kpi" style="background:var(--danger-bg)"><span data-i18n="mock.overdue">Impayés</span><strong dir="ltr">31 200 MAD</strong></div>
+          </div>
+          <div class="mock-bars"><i style="height:45%"></i><i style="height:30%"></i><i style="height:62%"></i><i style="height:38%"></i><i style="height:80%"></i><i style="height:42%"></i><i style="height:70%"></i><i style="height:35%"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="l-section" id="features">
+      <div class="l-wrap">
+        <div class="l-head"><h2 data-i18n="feat.title">Tout ce dont un syndic a besoin</h2><p data-i18n="feat.lead">Des modules pensés pour la réalité des résidences marocaines, en français et en arabe.</p></div>
+        <div class="l-grid">
+          <article class="card l-card"><h3 data-i18n="f1.t">Appels de fonds et charges</h3><p data-i18n="f1.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="f2.t">Paiements et reçus</h3><p data-i18n="f2.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="f3.t">Dépenses et prestataires</h3><p data-i18n="f3.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="f4.t">Réclamations et maintenance</h3><p data-i18n="f4.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="f5.t">Assemblées générales</h3><p data-i18n="f5.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="f6.t">Annonces et documents</h3><p data-i18n="f6.p"></p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="l-section alt" id="roles">
+      <div class="l-wrap">
+        <div class="l-head"><h2 data-i18n="roles.title">Un espace pour chaque acteur</h2><p data-i18n="roles.lead"></p></div>
+        <div class="l-grid">
+          <article class="card l-card"><h3 data-i18n="r1.t"></h3><p data-i18n="r1.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="r2.t"></h3><p data-i18n="r2.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="r3.t"></h3><p data-i18n="r3.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="r4.t"></h3><p data-i18n="r4.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="r5.t"></h3><p data-i18n="r5.p"></p></article>
+          <article class="card l-card"><h3 data-i18n="r6.t"></h3><p data-i18n="r6.p"></p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="l-section" id="pricing">
+      <div class="l-wrap">
+        <div class="l-head"><h2 data-i18n="price.title">Des offres selon la taille de votre parc</h2><p data-i18n="price.lead"></p></div>
+        <div class="l-grid">
+          <article class="card price-card"><h3 data-i18n="p1.t">Starter</h3><div class="price-amount" dir="ltr">299 <small class="muted" style="font-size:var(--fs-sm)" data-i18n="price.month">MAD / mois</small></div><p class="muted small" data-i18n="p1.d"></p><ul><li data-i18n="p.i1"></li><li data-i18n="p.i2"></li><li data-i18n="p.i3"></li><li data-i18n="p.i4"></li></ul></article>
+          <article class="card price-card featured"><h3 data-i18n="p2.t">Pro</h3><div class="price-amount" dir="ltr">699 <small class="muted" style="font-size:var(--fs-sm)" data-i18n="price.month">MAD / mois</small></div><p class="muted small" data-i18n="p2.d"></p><ul><li data-i18n="p.i1"></li><li data-i18n="p.i2"></li><li data-i18n="p.i3"></li><li data-i18n="p.i4"></li></ul></article>
+          <article class="card price-card"><h3 data-i18n="p3.t">Business</h3><div class="price-amount" dir="ltr">1 490 <small class="muted" style="font-size:var(--fs-sm)" data-i18n="price.month">MAD / mois</small></div><p class="muted small" data-i18n="p3.d"></p><ul><li data-i18n="p.i1"></li><li data-i18n="p.i2"></li><li data-i18n="p.i3"></li><li data-i18n="p.i4"></li></ul></article>
+        </div>
+        <p class="l-note" style="margin-top:24px" data-i18n="note"></p>
+        <p style="margin-top:24px"><a class="btn btn-primary btn-lg" href="app.html#/login" data-i18n="nav.demo">Essayer la démo</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="l-foot"><div class="l-wrap"><span data-i18n="foot.rights">© Syndic.ma — prototype de démonstration</span><span>Syndic.ma</span></div></footer>
+  <script type="module" src="assets/js/landing.js"></script>
+</body>
+</html>

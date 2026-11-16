@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Syndic.ma</title>
+  <meta name="description" content="Syndic.ma — application de gestion de copropriété (prototype de démonstration).">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <script>
+    // Apply saved theme/direction before first paint to avoid a flash.
+    try {
+      var l = localStorage.getItem('syndicma.lang') || 'fr';
+      document.documentElement.lang = l;
+      document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.dataset.theme = localStorage.getItem('syndicma.theme') || 'light';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#view">Aller au contenu / تخطي إلى المحتوى</a>
+  <div id="app"><div class="boot"><div class="spinner" role="status" aria-label="Chargement"></div></div></div>
+  <div id="modal-root"></div>
+  <div class="toasts" id="toasts" role="region" aria-live="polite" aria-label="Notifications"></div>
+  <noscript><p style="padding:24px">JavaScript est nécessaire pour utiliser cette application. / يلزم تفعيل JavaScript.</p></noscript>
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
