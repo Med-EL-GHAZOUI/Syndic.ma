@@ -11,7 +11,11 @@ describe('authInterceptor + AuthService (refresh rotation)', () => {
   let auth: AuthService;
   let navigated: string[];
 
-  const pair = (n: number) => ({ accessToken: `access-${n}`, refreshToken: `refresh-${n}`, expiresIn: 900 });
+  /** Anything in browser storage that looks like a token (there must be none: it is an HttpOnly cookie). */
+  const storedSecrets = (): string[] =>
+    [localStorage, sessionStorage].flatMap((st) => Object.keys(st).filter((k) => /access-|refresh-/.test(st.getItem(k) ?? '')));
+
+  const pair = (n: number) => ({ accessToken: `access-${n}`, expiresIn: 900 });
   const user = { id: 'u1', orgId: 'o1', name: 'Test', email: 't@example.com', role: 'accountant', residenceIds: [], providerId: null };
 
   /** Logs in so the service holds access-1 / refresh-1. */
@@ -22,6 +26,7 @@ describe('authInterceptor + AuthService (refresh rotation)', () => {
   }
 
   beforeEach(() => {
+    localStorage.clear();
     sessionStorage.clear();
     navigated = [];
     TestBed.configureTestingModule({
@@ -57,14 +62,15 @@ describe('authInterceptor + AuthService (refresh rotation)', () => {
 
     ctrl.expectOne('/api/units').flush({}, { status: 401, statusText: 'Unauthorized' });
     const refresh = ctrl.expectOne('/api/auth/refresh');
-    expect(refresh.request.body).toEqual({ refreshToken: 'refresh-1' });
+    expect(refresh.request.body).toEqual({}); // the refresh token is NOT sent by JS: the HttpOnly cookie carries it
+    expect(refresh.request.headers.get('X-Requested-With')).toBe('syndicma'); // CSRF header
     refresh.flush(pair(2));
 
     const replay = ctrl.expectOne('/api/units');
     expect(replay.request.headers.get('Authorization')).toBe('Bearer access-2');
     replay.flush([{ id: 'a' }]);
     expect(result).toEqual([{ id: 'a' }]);
-    expect(sessionStorage.getItem('syndicma.rt')).toBe('refresh-2');
+    expect(storedSecrets()).toEqual([]);
   });
 
   it('three parallel 401s share ONE refresh (a second call would look like token reuse and revoke the session)', () => {
@@ -96,8 +102,22 @@ describe('authInterceptor + AuthService (refresh rotation)', () => {
     expect(failed).toBeTrue();
     expect(auth.user()).toBeNull();
     expect(auth.accessToken).toBeNull();
-    expect(sessionStorage.getItem('syndicma.rt')).toBeNull();
+    expect(localStorage.getItem('syndicma.session')).toBeNull();
     expect(navigated).toContain('/login');
+  });
+
+  it('a 401 that survives a successful refresh is a business error: it fails the request but keeps the session', () => {
+    loginFirst();
+    let failed = false;
+    http.post('/api/auth/change-password', {}).subscribe({ error: () => (failed = true) });
+    ctrl.expectOne('/api/auth/change-password').flush({ message: 'Current password is incorrect' }, { status: 401, statusText: 'Unauthorized' });
+    ctrl.expectOne('/api/auth/refresh').flush(pair(2));
+    ctrl.expectOne('/api/auth/change-password').flush({ message: 'Current password is incorrect' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(failed).toBeTrue();
+    expect(auth.user()).not.toBeNull(); // still signed in
+    expect(auth.accessToken).toBe('access-2');
+    expect(navigated).not.toContain('/login');
   });
 
   it('never loops: a request that still gets 401 after refresh fails', () => {
@@ -121,20 +141,20 @@ describe('authInterceptor + AuthService (refresh rotation)', () => {
   });
 
   it('restore(): silently refreshes from the stored refresh token and loads the user', () => {
-    sessionStorage.setItem('syndicma.rt', 'refresh-9');
+    localStorage.setItem('syndicma.session', '1');
     auth.restore().subscribe();
     const refresh = ctrl.expectOne('/api/auth/refresh');
-    expect(refresh.request.body).toEqual({ refreshToken: 'refresh-9' });
+    expect(refresh.request.headers.get('X-Requested-With')).toBe('syndicma');
     refresh.flush(pair(10));
     ctrl.expectOne('/api/auth/me').flush(user);
 
     expect(auth.user()?.email).toBe('t@example.com');
     expect(auth.accessToken).toBe('access-10');
-    expect(sessionStorage.getItem('syndicma.rt')).toBe('refresh-10'); // rotated
+    expect(storedSecrets()).toEqual([]); // no token in any browser storage
   });
 
   it('restore() with a revoked/expired refresh token ends signed out, without throwing', () => {
-    sessionStorage.setItem('syndicma.rt', 'stale');
+    localStorage.setItem('syndicma.session', '1');
     let completed = false;
     auth.restore().subscribe({ complete: () => (completed = true) });
     ctrl.expectOne('/api/auth/refresh').flush({}, { status: 401, statusText: 'Unauthorized' });
@@ -152,9 +172,10 @@ describe('authInterceptor + AuthService (refresh rotation)', () => {
   it('logout() revokes the refresh token on the server and clears local state', () => {
     loginFirst();
     auth.logout();
-    expect(ctrl.expectOne('/api/auth/logout').request.body).toEqual({ refreshToken: 'refresh-1' });
+    const logout = ctrl.expectOne('/api/auth/logout');
+    expect(logout.request.headers.get('X-Requested-With')).toBe('syndicma');
     expect(auth.user()).toBeNull();
-    expect(sessionStorage.getItem('syndicma.rt')).toBeNull();
+    expect(localStorage.getItem('syndicma.session')).toBeNull();
     expect(navigated).toContain('/login');
   });
 });

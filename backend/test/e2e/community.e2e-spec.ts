@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { DataSource } from 'typeorm';
-import { bearer, buildWorld, createApp, http, loginAs, PASSWORD, World } from './helpers';
+import { bearer, buildWorld, createApp, http, loginAs, PASSWORD, refreshWith, World } from './helpers';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const PDF = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.from('fake pdf body for tests\n%%EOF')]);
@@ -233,13 +233,13 @@ describe('Maintenance, assemblies, documents', () => {
       const u = w.a.users.manager2;
       const session = await loginAs(app, u.email);
       const t = bearer(session.accessToken);
-      await http(app).post('/api/auth/change-password').set(t).send({ currentPassword: 'wrong-password-1', newPassword: 'Brand-new-passw0rd!' }).expect(401);
+      await http(app).post('/api/auth/change-password').set(t).send({ currentPassword: 'wrong-password-1', newPassword: 'Brand-new-passw0rd!' }).expect(403); // authenticated, but re-confirmation failed (not a 401: the session is fine)
       await http(app).post('/api/auth/change-password').set(t).send({ currentPassword: PASSWORD, newPassword: 'short' }).expect(400);
       await http(app).post('/api/auth/change-password').set(t).send({ currentPassword: PASSWORD, newPassword: PASSWORD }).expect(400);
       await http(app).post('/api/auth/change-password').send({ currentPassword: PASSWORD, newPassword: 'Brand-new-passw0rd!' }).expect(401);
       await http(app).post('/api/auth/change-password').set(t).send({ currentPassword: PASSWORD, newPassword: 'Brand-new-passw0rd!' }).expect(204);
 
-      await http(app).post('/api/auth/refresh').send({ refreshToken: session.refreshToken }).expect(401); // old sessions revoked
+      await refreshWith(app, session.cookie).expect(401); // old sessions revoked
       await http(app).post('/api/auth/login').send({ email: u.email, password: PASSWORD }).expect(401);
       await http(app).post('/api/auth/login').send({ email: u.email, password: 'Brand-new-passw0rd!' }).expect(200);
     });

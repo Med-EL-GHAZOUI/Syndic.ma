@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { module: 'announcements', path: '/announcements', icon: 'send', key: 'nav.announcements' },
   { module: 'users', path: '/users', icon: 'door', key: 'nav.users' },
   { module: 'audit', path: '/audit', icon: 'lock', key: 'nav.audit' },
+  { module: 'dashboard', path: '/settings', icon: 'lock', key: 'nav.settings' },
 ];
 
 @Component({

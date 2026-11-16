@@ -30,10 +30,20 @@ export async function createApp(): Promise<INestApplication> {
 
 export const http = (app: INestApplication) => request(app.getHttpServer());
 
+/** The refresh token is an HttpOnly cookie: tests carry it as a `Cookie` header, like a browser would. */
+export const cookieFrom = (res: request.Response): string => {
+  const raw = (res.headers['set-cookie'] as unknown as string[] | undefined)?.find((c) => c.startsWith('syndicma_rt='));
+  if (!raw) throw new Error('no refresh cookie in response');
+  return raw.split(';')[0];
+};
+
+export const refreshWith = (app: INestApplication, cookie: string) =>
+  http(app).post('/api/auth/refresh').set('X-Requested-With', 'syndicma').set('Cookie', cookie);
+
 export async function loginAs(app: INestApplication, email: string, password = PASSWORD) {
   const res = await http(app).post('/api/auth/login').send({ email, password });
   if (res.status !== 200) throw new Error(`login failed for ${email}: ${res.status} ${JSON.stringify(res.body)}`);
-  return res.body as { accessToken: string; refreshToken: string; expiresIn: number };
+  return { accessToken: res.body.accessToken as string, expiresIn: res.body.expiresIn as number, cookie: cookieFrom(res) };
 }
 
 export const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });

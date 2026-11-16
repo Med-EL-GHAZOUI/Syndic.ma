@@ -16,11 +16,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((err: unknown) => {
       if (!(err instanceof HttpErrorResponse) || err.status !== 401 || req.context.get(RETRIED)) return throwError(() => err);
       return auth.refresh().pipe(
-        switchMap((token) => next(withToken(token).clone({ context: req.context.set(RETRIED, true) }))),
+        // ONLY a failed refresh means "session over". An error from the replayed request itself
+        // (e.g. 401 "current password is incorrect") is a normal business error and must not sign the user out.
         catchError((refreshErr: unknown) => {
           auth.expire();
           return throwError(() => refreshErr);
         }),
+        switchMap((token) => next(withToken(token).clone({ context: req.context.set(RETRIED, true) }))),
       );
     }),
   );

@@ -20,7 +20,7 @@ Status legend: ✅ implemented and covered by tests · 🟡 implemented, not yet
 | **Elevation of privilege** | deny-by-default global guards; RBAC matrix identical to the UI; role/active re-read from DB each request (disable/suspend immediate); admins can't self-demote; `super_admin` not creatable via API | ✅ |
 
 ## Frontend notes
-- Access token in memory only; refresh token in `sessionStorage` (readable by XSS). **Planned hardening:** httpOnly + SameSite cookie issued by the API, plus CSRF protection for the refresh endpoint. A strict CSP (`script-src 'self'`) in the nginx image limits XSS impact; Angular's template escaping is the first line of defence.
+- Access token in memory only. The refresh token is an **HttpOnly, SameSite=Strict cookie scoped to `/api/auth`** (`Secure` in production): JavaScript cannot read it, so an XSS can no longer steal a long-lived session. The browser keeps only a non-secret hint (`syndicma.session=1`) to know whether to try a silent refresh. Refresh/logout also require a custom `X-Requested-With: syndicma` header (CSRF defence in depth); the token is never accepted from a request body or returned in a response body (tested).
 - Refresh is single-flight (tested): parallel 401s share one rotation, otherwise the API would flag token reuse and revoke the session.
 - UI permission checks are cosmetic; the API re-checks everything.
 
@@ -44,6 +44,11 @@ This is engineering guidance, **not legal advice**. Have a Moroccan lawyer / the
 
 ## Incident found by the tests (migration drift)
 `typeorm migration:generate` emitted `DROP CONSTRAINT` for every hand-written CHECK (financial amounts, statuses, receipt/status coherence) because they are not declared in the entities. The e2e suite caught it (a raw `UPDATE charges SET amount = -1` succeeded). Fixed by removing the drops, adding the idempotent `RepairIntegrity` migration, centralising the rules in `src/migrations/integrity.ts` and adding `schema-guard.e2e-spec.ts`, which fails if any rule or trigger is missing. **Rule: never apply a generated migration without reading it.**
+
+## Incidents #3 and #4 — found while verifying the cookie flow
+- **Interceptor logged users out on any business 401.** `catchError` wrapped both the token refresh and the replayed request, so a legitimate 401 on the replay (wrong current password) was treated as an expired session. Fixed (only a failed refresh ends the session), regression test added; the API now answers **403** for a wrong current password (the caller is authenticated, only the re-confirmation failed).
+- **Malformed cookie → HTTP 500.** `decodeURIComponent` threw on bad percent-encoding. Now treated as "no cookie" (401); covered by a test.
+Both were caught by driving the real UI/API, not by the original tests — which is why the e2e suite keeps a test for each.
 
 ## Incident #2 — timestamps without time zone
 Audit and business timestamps were `timestamp WITHOUT time zone`, so the driver read database-clock values as local time and every date (including the audit trail) was shifted by the server's UTC offset. Spotted while checking the new audit page in the browser. Fixed with the hand-written `TimestampsWithTimeZone` migration (`ALTER … TYPE timestamptz USING … AT TIME ZONE 'UTC'`, data-preserving; a generated migration would have dropped the columns) and guarded by two tests (no time-zone-less column; recent audit entries are within seconds of "now").

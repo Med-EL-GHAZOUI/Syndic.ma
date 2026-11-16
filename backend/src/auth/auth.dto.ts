@@ -10,6 +10,3 @@ export class ChangePasswordDto {
   @IsString() @MinLength(12) @MaxLength(128) newPassword: string;
 }
 
-export class RefreshDto {
-  @IsString() @MinLength(20) @MaxLength(200) refreshToken: string;
-}

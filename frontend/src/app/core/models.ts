@@ -10,9 +10,9 @@ export interface User {
   providerId: string | null;
 }
 
+/** The refresh token is never in the body: it is an HttpOnly cookie. */
 export interface TokenPair {
   accessToken: string;
-  refreshToken: string;
   expiresIn: number;
 }
 

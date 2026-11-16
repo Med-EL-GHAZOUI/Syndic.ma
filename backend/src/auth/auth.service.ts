@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -76,7 +76,10 @@ export class AuthService {
   /** Changing the password revokes EVERY refresh token of the user (all devices are signed out). */
   async changePassword(userId: string, current: string, next: string): Promise<void> {
     const user = await this.users.findOneBy({ id: userId });
-    if (!user || !(await bcrypt.compare(current, user.passwordHash))) throw new UnauthorizedException('Current password is incorrect');
+    if (!user) throw new UnauthorizedException();
+    // 403, not 401: the caller IS authenticated; only the re-confirmation failed. A 401 would make
+    // clients believe the session expired.
+    if (!(await bcrypt.compare(current, user.passwordHash))) throw new ForbiddenException('Current password is incorrect');
     if (current === next) throw new BadRequestException('The new password must differ from the current one');
     await this.users.update(user.id, { passwordHash: await bcrypt.hash(next, COST) });
     await this.tokens.update({ userId: user.id, revokedAt: IsNull() }, { revokedAt: new Date() });

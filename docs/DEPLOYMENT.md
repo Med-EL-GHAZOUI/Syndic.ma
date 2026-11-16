@@ -18,7 +18,7 @@ npm start
 ```
 Docker: `docker build -t syndicma-api backend`. The image runs as a non-root user, has a `/api/health` healthcheck and was smoke-tested against PostgreSQL (health 200, `/docs` 404 in production, migrations runner OK).
 
-Required env: `DATABASE_URL`, `JWT_ACCESS_SECRET`. Optional: `STORAGE_DIR` (uploads; mount a persistent, access-restricted volume or switch to object storage), `ACCESS_TTL_SECONDS` (900), `REFRESH_TTL_DAYS` (14), `CORS_ORIGIN`, `PORT`, `DATABASE_SSL=true`, `THROTTLE_AUTH_LIMIT`, `THROTTLE_LIMIT`, `BCRYPT_COST` (≥ 10 in prod).
+Required env: `DATABASE_URL`, `JWT_ACCESS_SECRET`. Optional: `COOKIE_SECURE` (default: `true` in production — the refresh cookie is then only sent over HTTPS, except to `localhost`; set `false` ONLY for plain-HTTP internal tests), `STORAGE_DIR` (uploads; mount a persistent, access-restricted volume or switch to object storage), `ACCESS_TTL_SECONDS` (900), `REFRESH_TTL_DAYS` (14), `CORS_ORIGIN`, `PORT`, `DATABASE_SSL=true`, `THROTTLE_AUTH_LIMIT`, `THROTTLE_LIMIT`, `BCRYPT_COST` (≥ 10 in prod).
 
 ## Full stack with Docker Compose
 ```bash
@@ -42,3 +42,6 @@ Generated with `npm run migration:generate -- src/migrations/Name`, reviewed by 
 
 ## Monitoring (not done)
 Health endpoint exists. Still to do: metrics (latency, error rate, DB pool), structured JSON logs with PII redaction, alerts (5xx rate, failed-login spikes, refresh-reuse events, DB lag), uptime probe.
+
+## Sessions behind a reverse proxy
+The refresh token is an HttpOnly cookie on `/api/auth`. Serve the web app and `/api` from the **same origin** (the provided nginx does) so `SameSite=Strict` works and no CORS is needed. Terminate TLS in front and enable HSTS. Never expose the API on a different site without revisiting the cookie/CSRF settings.

@@ -21,6 +21,7 @@ export const routes: Routes = [
       { path: 'announcements', canActivate: [moduleGuard], data: { module: 'announcements' }, loadComponent: () => import('./pages/announcements').then((m) => m.AnnouncementsPage) },
       { path: 'users', canActivate: [moduleGuard], data: { module: 'users' }, loadComponent: () => import('./pages/users').then((m) => m.UsersPage) },
       { path: 'audit', canActivate: [moduleGuard], data: { module: 'audit' }, loadComponent: () => import('./pages/audit').then((m) => m.AuditPage) },
+      { path: 'settings', loadComponent: () => import('./pages/settings').then((m) => m.SettingsPage) },
       { path: 'forbidden', loadComponent: () => import('./pages/forbidden').then((m) => m.ForbiddenPage) },
     ],
   },

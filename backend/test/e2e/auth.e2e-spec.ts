@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { bearer, buildWorld, createApp, http, loginAs, PASSWORD, World } from './helpers';
+import { bearer, buildWorld, cookieFrom, createApp, http, loginAs, PASSWORD, refreshWith, World } from './helpers';
 
 describe('Authentication & sessions', () => {
   let app: INestApplication;
@@ -48,34 +48,63 @@ describe('Authentication & sessions', () => {
     await http(app).post('/api/auth/login').send({ email: w.a.users.owner.email, password: PASSWORD, role: 'super_admin' }).expect(400);
   });
 
-  it('rotates refresh tokens: each works once and reuse revokes the whole family', async () => {
-    const first = await loginAs(app, w.a.users.owner.email);
-    const second = (await http(app).post('/api/auth/refresh').send({ refreshToken: first.refreshToken }).expect(200)).body;
-    expect(second.refreshToken).not.toBe(first.refreshToken);
-    expect(second.accessToken).toBeTruthy();
-
-    // Replaying the first token = theft signal -> 401 and the family (incl. `second`) is revoked.
-    await http(app).post('/api/auth/refresh').send({ refreshToken: first.refreshToken }).expect(401);
-    await http(app).post('/api/auth/refresh').send({ refreshToken: second.refreshToken }).expect(401);
+  it('the refresh token is only ever an HttpOnly, SameSite=Strict cookie scoped to /api/auth — never in a body', async () => {
+    const res = await http(app).post('/api/auth/login').send({ email: w.a.users.owner.email, password: PASSWORD }).expect(200);
+    expect(Object.keys(res.body).sort()).toEqual(['accessToken', 'expiresIn']);
+    expect(JSON.stringify(res.body)).not.toMatch(/refresh/i);
+    const cookie = (res.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('syndicma_rt='))!;
+    expect(cookie).toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/SameSite=Strict/i);
+    expect(cookie).toMatch(/Path=\/api\/auth/i);
+    expect(cookie).toMatch(/Max-Age=\d+/i);
   });
 
-  it('only one of two concurrent refreshes with the same token wins', async () => {
+  it('a refresh token sent in a request body is ignored (cookie only)', async () => {
+    await http(app).post('/api/auth/refresh').set('X-Requested-With', 'syndicma').send({ refreshToken: 'x'.repeat(64) }).expect(401);
+  });
+
+  it('rotates refresh tokens: each works once and reuse revokes the whole family', async () => {
+    const first = await loginAs(app, w.a.users.owner.email);
+    const res2 = await refreshWith(app, first.cookie).expect(200);
+    const cookie2 = cookieFrom(res2);
+    expect(cookie2).not.toBe(first.cookie);
+    expect(res2.body.accessToken).toBeTruthy();
+    expect(res2.body.refreshToken).toBeUndefined();
+
+    // Replaying the first token = theft signal -> 401, cookie cleared, and the family (incl. cookie2) is revoked.
+    const replay = await refreshWith(app, first.cookie).expect(401);
+    expect((replay.headers['set-cookie'] as unknown as string[]).join(';')).toMatch(/syndicma_rt=;/);
+    await refreshWith(app, cookie2).expect(401);
+  });
+
+  it('only one of two concurrent refreshes with the same cookie wins', async () => {
     const s = await loginAs(app, w.a.users.tenant.email);
-    const results = await Promise.all([
-      http(app).post('/api/auth/refresh').send({ refreshToken: s.refreshToken }),
-      http(app).post('/api/auth/refresh').send({ refreshToken: s.refreshToken }),
-    ]);
+    const results = await Promise.all([refreshWith(app, s.cookie), refreshWith(app, s.cookie)]);
     expect(results.map((r) => r.status).sort()).toEqual([200, 401]);
   });
 
-  it('logout revokes the refresh token', async () => {
+  it('CSRF: refresh and logout need the custom header even when the cookie is valid', async () => {
     const s = await loginAs(app, w.a.users.manager.email);
-    await http(app).post('/api/auth/logout').send({ refreshToken: s.refreshToken }).expect(204);
-    await http(app).post('/api/auth/refresh').send({ refreshToken: s.refreshToken }).expect(401);
+    await http(app).post('/api/auth/refresh').set('Cookie', s.cookie).expect(403);
+    await http(app).post('/api/auth/refresh').set('Cookie', s.cookie).set('X-Requested-With', 'something-else').expect(403);
+    await http(app).post('/api/auth/logout').set('Cookie', s.cookie).expect(403);
+    await refreshWith(app, s.cookie).expect(200); // the session itself was not harmed by the blocked attempts
   });
 
-  it('does not accept an unknown refresh token', async () => {
-    await http(app).post('/api/auth/refresh').send({ refreshToken: 'x'.repeat(64) }).expect(401);
+  it('refresh without a cookie is rejected', async () => {
+    await http(app).post('/api/auth/refresh').set('X-Requested-With', 'syndicma').expect(401);
+  });
+
+  it('logout revokes the session on the server and clears the cookie', async () => {
+    const s = await loginAs(app, w.a.users.manager.email);
+    const res = await http(app).post('/api/auth/logout').set('X-Requested-With', 'syndicma').set('Cookie', s.cookie).expect(204);
+    expect((res.headers['set-cookie'] as unknown as string[]).join(';')).toMatch(/syndicma_rt=;/);
+    await refreshWith(app, s.cookie).expect(401);
+  });
+
+  it('does not accept an unknown or malformed refresh cookie', async () => {
+    await refreshWith(app, 'syndicma_rt=' + 'x'.repeat(64)).expect(401);
+    await refreshWith(app, 'syndicma_rt=%E0%A4%A').expect(401); // malformed percent-encoding must not crash
   });
 
   it('disabling a user takes effect immediately, even for an unexpired access token', async () => {
