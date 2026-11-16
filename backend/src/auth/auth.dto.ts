@@ -10,3 +10,12 @@ export class ChangePasswordDto {
   @IsString() @MinLength(12) @MaxLength(128) newPassword: string;
 }
 
+
+export class ForgotPasswordDto {
+  @IsEmail() @MaxLength(200) email: string;
+}
+
+export class ResetPasswordDto {
+  @IsString() @MinLength(20) @MaxLength(200) token: string;
+  @IsString() @MinLength(12) @MaxLength(128) newPassword: string;
+}

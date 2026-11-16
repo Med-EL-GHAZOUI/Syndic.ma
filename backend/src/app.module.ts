@@ -1,3 +1,4 @@
+import './pg-types';
 import { Controller, Get, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -8,6 +9,8 @@ import { AuthModule } from './auth/auth.module';
 import { Public } from './common/auth-user';
 import { CommonModule } from './common/common.module';
 import { CommunityModule } from './community/community.module';
+import { MailModule } from './mail/mail.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { JwtAuthGuard, PermissionsGuard } from './common/guards';
 import { ENTITIES } from './entities';
 import { FinanceModule } from './finance/finance.module';
@@ -46,6 +49,8 @@ function validateEnv(env: Record<string, unknown>) {
       }),
     }),
     CommonModule,
+    MailModule,
+    MetricsModule,
     AuthModule,
     PropertiesModule,
     FinanceModule,

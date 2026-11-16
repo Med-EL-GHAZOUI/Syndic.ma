@@ -5,6 +5,9 @@ process.env.NODE_ENV = 'test';
 process.env.RUN_MIGRATIONS = 'true';
 process.env.THROTTLE_AUTH_LIMIT = '100000';
 process.env.THROTTLE_LIMIT = '1000000';
+if (!process.env.E2E_NO_METRICS) process.env.METRICS_TOKEN = 'e2e-metrics-token-0123456789';
+process.env.MAIL_TRANSPORT = 'memory';
+process.env.APP_URL = 'https://app.example.test';
 process.env.BCRYPT_COST = '4'; // fast hashing in tests only (production enforces >= 10)
 process.env.STORAGE_DIR = require('path').join(require('os').tmpdir(), 'syndicma-e2e-storage');
 

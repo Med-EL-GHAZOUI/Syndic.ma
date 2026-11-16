@@ -19,6 +19,10 @@ export const CHECKS: { table: string; name: string; expr: string }[] = [
   { table: 'assemblies', name: 'chk_assembly_status', expr: "status IN ('planned','convened','held','cancelled')" },
   { table: 'documents', name: 'chk_doc_visibility', expr: "visibility IN ('all','owners','staff')" },
   { table: 'documents', name: 'chk_doc_size', expr: 'size > 0 AND size <= 10485760' },
+  { table: 'bank_lines', name: 'chk_bank_status', expr: "status IN ('unmatched','matched','ignored')" },
+  { table: 'bank_lines', name: 'chk_bank_amount', expr: 'amount <> 0' },
+  { table: 'bank_lines', name: 'chk_bank_match', expr: "(status = 'matched') = (payment_id IS NOT NULL)" },
+  { table: 'payments', name: 'chk_payments_verified', expr: "NOT verified OR status = 'recorded'" },
 ];
 
-export const TRIGGERS = ['audit_logs_append_only', 'audit_logs_no_truncate', 'payments_no_delete', 'assemblies_no_delete_held'];
+export const TRIGGERS = ['audit_logs_append_only', 'audit_logs_no_truncate', 'payments_no_delete', 'assemblies_no_delete_held', 'period_closures_append_only'];

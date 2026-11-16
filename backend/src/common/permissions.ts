@@ -10,7 +10,7 @@ export const MATRIX: Record<Role, Record<string, string>> = {
   syndic_admin: {
     residences: 'vced', units: 'vced', residents: 'vced', finance: 'vced', payments: 'vcex', expenses: 'vceda',
     complaints: 'vced', maintenance: 'vced', announcements: 'vced', documents: 'vced', assemblies: 'vced',
-    providers: 'vced', reports: 'v', users: 'vced', audit: 'v', settings: 've',
+    providers: 'vced', reports: 'v', users: 'vced', audit: 'v', settings: 've', reconciliation: 'vcex',
   },
   manager: {
     residences: 've', units: 'vced', residents: 'vced', finance: 'v', payments: 'vc', expenses: 'vce',
@@ -19,7 +19,7 @@ export const MATRIX: Record<Role, Record<string, string>> = {
   },
   accountant: {
     residences: 'v', units: 'v', residents: 'v', finance: 'vced', payments: 'vcex', expenses: 'vceda',
-    documents: 'vc', providers: 'v', reports: 'v',
+    documents: 'vc', providers: 'v', reports: 'v', reconciliation: 'vcex',
   },
   owner: { finance: 'v', payments: 'vc', complaints: 'vc', announcements: 'v', documents: 'v', assemblies: 'v' },
   tenant: { complaints: 'vc', announcements: 'v', documents: 'v' },

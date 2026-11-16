@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { AuthUser } from '../common/auth-user';
 import { AuditService } from '../common/audit.service';
 import { page, PageQuery } from '../common/pagination';
+import { PeriodService } from '../common/period.service';
 import { RESIDENT_ROLES } from '../common/permissions';
 import { ScopeService } from '../common/scope.service';
 import { Announcement, Complaint, Expense, Provider } from '../entities';
@@ -18,6 +19,7 @@ export class OpsService {
     @InjectRepository(Announcement) private readonly announcements: Repository<Announcement>,
     private readonly scope: ScopeService,
     private readonly audit: AuditService,
+    private readonly period: PeriodService,
   ) {}
 
   // ---- providers --------------------------------------------------------------------
@@ -54,6 +56,7 @@ export class OpsService {
   async createExpense(user: AuthUser, dto: ExpenseDto) {
     await this.scope.assertResidence(user, dto.residenceId);
     await this.providerOk(user, dto.providerId);
+    await this.period.assertOpen(this.scope.requireOrg(user), dto.residenceId, dto.date);
     const row = await this.expenses.save(this.expenses.create({ ...dto, providerId: dto.providerId ?? null, orgId: this.scope.requireOrg(user), status: 'pending', paidAt: null, cancelReason: null }));
     await this.audit.log(user, 'create', 'expenses', row.id, `${row.label} — ${row.amount}`);
     return row;
@@ -71,6 +74,8 @@ export class OpsService {
     if (row.status !== 'pending') throw new ConflictException('Only pending expenses can be edited');
     if (dto.residenceId !== row.residenceId) throw new BadRequestException('An expense cannot change residence');
     await this.providerOk(user, dto.providerId);
+    await this.period.assertOpen(row.orgId, row.residenceId, row.date);
+    await this.period.assertOpen(row.orgId, row.residenceId, dto.date);
     Object.assign(row, { ...dto, providerId: dto.providerId ?? null });
     await this.expenses.save(row);
     await this.audit.log(user, 'update', 'expenses', id, row.label);
@@ -81,6 +86,7 @@ export class OpsService {
   async transitionExpense(user: AuthUser, id: string, from: Expense['status'], to: Expense['status'], action: string) {
     const row = await this.ownedExpense(user, id);
     if (row.status !== from) throw new ConflictException(`Expense must be ${from} to ${action}`);
+    await this.period.assertOpen(row.orgId, row.residenceId, row.date);
     const res = await this.expenses.update({ id, status: from }, { status: to, paidAt: to === 'paid' ? new Date() : row.paidAt });
     if (!res.affected) throw new ConflictException('Expense was modified concurrently');
     await this.audit.log(user, action, 'expenses', id, row.label);
@@ -90,6 +96,7 @@ export class OpsService {
   async cancelExpense(user: AuthUser, id: string, reason: string) {
     const row = await this.ownedExpense(user, id);
     if (!['approved', 'paid'].includes(row.status)) throw new ConflictException('Only approved or paid expenses are cancelled (pending ones can be deleted by editing)');
+    await this.period.assertOpen(row.orgId, row.residenceId, row.date);
     await this.expenses.update({ id }, { status: 'cancelled', cancelReason: reason });
     await this.audit.log(user, 'cancel', 'expenses', id, reason);
     return { id, status: 'cancelled' };

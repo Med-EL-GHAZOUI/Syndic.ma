@@ -5,6 +5,7 @@ import { AuthUser } from '../common/auth-user';
 import { AuditService } from '../common/audit.service';
 import { allocateFifo, distributeByShares, fromCents, OpenCharge, toCents } from '../common/money';
 import { page } from '../common/pagination';
+import { PeriodService } from '../common/period.service';
 import { RESIDENT_ROLES } from '../common/permissions';
 import { ScopeService } from '../common/scope.service';
 import { CallForFunds, Payment, Resident, Unit } from '../entities';
@@ -60,6 +61,7 @@ export class FinanceService {
     @InjectRepository(Resident) private readonly residents: Repository<Resident>,
     private readonly scope: ScopeService,
     private readonly audit: AuditService,
+    private readonly period: PeriodService,
   ) {}
 
   // ---- calls for funds -------------------------------------------------------------
@@ -194,6 +196,7 @@ export class FinanceService {
     this.assertNotFuture(dto.date);
     const payerName = await this.payerName(unit.id);
     return this.ds.transaction(async (m) => {
+      await this.period.assertOpen(unit.orgId, unit.residenceId, dto.date, m);
       const open = await this.lockedOpenCharges(m, unit.orgId, unit.id);
       const cents = toCents(dto.amount);
       const due = open.reduce((a, c) => a + c.dueCents, 0);
@@ -220,6 +223,7 @@ export class FinanceService {
     const unit = await this.scope.unitFor(user, dto.unitId);
     this.assertNotFuture(dto.date);
     if (!dto.reference) throw new BadRequestException('A reference is required to declare a payment');
+    await this.period.assertOpen(unit.orgId, unit.residenceId, dto.date);
     const open: { dueCents: string }[] = await this.ds.query(OPEN_CHARGES_SQL, [unit.orgId, unit.id]);
     const due = open.reduce((a, r) => a + Number(r.dueCents), 0);
     if (toCents(dto.amount) > due) throw new ConflictException(`Amount exceeds the balance due (${fromCents(due)})`);
@@ -243,6 +247,7 @@ export class FinanceService {
     return this.ds.transaction(async (m) => {
       const [p] = await m.query('SELECT * FROM payments WHERE id = $1 AND org_id = $2 FOR UPDATE', [id, user.orgId]);
       if (p.status !== 'pending') throw new ConflictException('Only pending payments can be confirmed');
+      await this.period.assertOpen(user.orgId!, p.residence_id, p.date, m);
       const open = await this.lockedOpenCharges(m, user.orgId!, p.unit_id);
       const cents = toCents(p.amount);
       const due = open.reduce((a, c) => a + c.dueCents, 0);
@@ -270,8 +275,11 @@ export class FinanceService {
   async reverse(user: AuthUser, id: string, reason: string) {
     await this.ownedPayment(user, id);
     return this.ds.transaction(async (m) => {
-      const [p] = await m.query('SELECT status, receipt_no FROM payments WHERE id = $1 AND org_id = $2 FOR UPDATE', [id, user.orgId]);
+      const [p] = await m.query('SELECT status, receipt_no, verified, date, residence_id FROM payments WHERE id = $1 AND org_id = $2 FOR UPDATE', [id, user.orgId]);
       if (p.status !== 'recorded') throw new ConflictException('Only recorded payments can be reversed');
+      // A payment confirmed by the bank statement is evidence, not a mere entry: un-match it explicitly first.
+      if (p.verified) throw new ConflictException('This payment is bank-verified; unmatch it from the bank statement before reversing');
+      await this.period.assertOpen(user.orgId!, p.residence_id, p.date, m);
       await m.update(Payment, { id }, { status: 'reversed', reason, reversedAt: new Date() });
       await this.audit.log(user, 'reverse', 'payments', id, `${p.receipt_no}: ${reason}`, m);
       return { id, status: 'reversed' };

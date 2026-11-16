@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthUser, CurrentUser, Public } from '../common/auth-user';
-import { ChangePasswordDto, LoginDto } from './auth.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, ResetPasswordDto } from './auth.dto';
 import { AuthService } from './auth.service';
 
 // Brute-force protection: per-IP limit on credential endpoints.
@@ -80,6 +80,25 @@ export class AuthController {
       clearRefreshCookie(res); // a dead/stolen token is removed from the browser
       throw err;
     }
+  }
+
+  @Public()
+  @Throttle({ default: { limit: LIMIT, ttl: 60_000 } })
+  @HttpCode(202)
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.auth.forgotPassword(dto.email);
+    // Identical answer whether or not the account exists (no user enumeration).
+    return { message: 'If an account exists for this address, an e-mail has been sent.' };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: LIMIT, ttl: 60_000 } })
+  @HttpCode(204)
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto, @Res({ passthrough: true }) res: Response) {
+    await this.auth.resetPassword(dto.token, dto.newPassword);
+    clearRefreshCookie(res);
   }
 
   @Public()
