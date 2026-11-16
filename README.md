@@ -17,7 +17,10 @@ Then open <http://localhost:5173/> (landing) or <http://localhost:5173/app.html>
 Demo accounts are listed on the login screen; the password is `demo1234`.
 *Settings → Réinitialiser* restores the initial dataset.
 
-## Layout
+## Stack (Phases 4+)
+`backend/` NestJS + PostgreSQL API · `frontend/` Angular 20 app (partial: login, dashboard, residences, units, finance, payments) · root `docker-compose.yml` for the full stack. See `backend/README.md`, `docs/DEPLOYMENT.md`, `docs/PRODUCT.md`. The vanilla prototype below remains the reference UI for modules not yet ported.
+
+## Layout (vanilla prototype)
 
 ```
 index.html            public landing page (FR/AR)

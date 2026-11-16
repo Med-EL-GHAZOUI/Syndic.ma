@@ -13,6 +13,11 @@ SEED_PASSWORD='choose-a-password' npm run seed   # optional demo org (prints acc
 npm run start:dev                    # http://localhost:3000/api  — Swagger: /docs
 ```
 
+## First platform admin (works in production; `seed` does not)
+```bash
+SUPERADMIN_EMAIL=root@example.com SUPERADMIN_PASSWORD='at-least-12-chars' node dist/create-super-admin.js
+```
+
 ## Test
 ```bash
 docker compose exec -T db psql -U syndicma -d syndicma -c "CREATE DATABASE syndicma_test"   # once

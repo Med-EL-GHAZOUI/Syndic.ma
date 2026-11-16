@@ -20,8 +20,16 @@ Docker: `docker build -t syndicma-api backend`. The image runs as a non-root use
 
 Required env: `DATABASE_URL`, `JWT_ACCESS_SECRET`. Optional: `STORAGE_DIR` (uploads; mount a persistent, access-restricted volume or switch to object storage), `ACCESS_TTL_SECONDS` (900), `REFRESH_TTL_DAYS` (14), `CORS_ORIGIN`, `PORT`, `DATABASE_SSL=true`, `THROTTLE_AUTH_LIMIT`, `THROTTLE_LIMIT`, `BCRYPT_COST` (≥ 10 in prod).
 
+## Full stack with Docker Compose
+```bash
+export POSTGRES_PASSWORD=...  JWT_ACCESS_SECRET=...      # required, no defaults
+docker compose up -d --build                              # db + api (runs migrations first) + web (nginx, port 8080)
+SUPERADMIN_EMAIL=... SUPERADMIN_PASSWORD=...   docker compose run --rm -e SUPERADMIN_EMAIL -e SUPERADMIN_PASSWORD api node dist/create-super-admin.js
+```
+Tested locally from an empty database: 4 migrations applied, health through nginx, super-admin login, tenant data denied to the platform admin. The web container serves the Angular build with a strict CSP (no inline scripts), `X-Frame-Options: DENY`, `nosniff`, and proxies `/api/` to the API. **Enable HSTS and terminate TLS in front of it before exposing it** (see the commented header in `frontend/nginx.conf.template`); nginx's resolver is `127.0.0.11` (Docker DNS) — adjust on other orchestrators.
+
 ## CI
-`.github/workflows/ci.yml`: type-check → build → unit tests → e2e tests (PostgreSQL service) → `npm audit --omit=dev --audit-level=high` → Docker build. **The workflow has not been run on GitHub yet** — it mirrors the local commands that pass.
+`.github/workflows/ci.yml`: type-check → build → unit tests → e2e tests (PostgreSQL service) → `npm audit --omit=dev --audit-level=high` → frontend build + unit tests (headless Chrome) → Docker builds of API and web. **The workflow has not been run on GitHub yet** — it mirrors the local commands that pass.
 
 ## Migrations
 Generated with `npm run migration:generate -- src/migrations/Name`, reviewed by hand, applied once per deploy before the new version starts. `IntegrityRules` adds the append-only audit trigger, payment-delete protection and CHECK constraints. Rollback = `typeorm migration:revert` (write `down()` carefully; financial tables are never dropped in down-migrations without a backup).

@@ -40,9 +40,28 @@ jobs:
       - name: Dependency audit (production deps)
         run: npm audit --omit=dev --audit-level=high
 
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx ng build --configuration production
+      - name: Unit tests (headless Chrome)
+        run: npx ng test --watch=false --karma-config=karma.conf.js
+      - run: npm audit --omit=dev --audit-level=high
+
   docker:
     runs-on: ubuntu-latest
-    needs: backend
+    needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t syndicma-api:ci backend
+      - run: docker build -t syndicma-web:ci frontend

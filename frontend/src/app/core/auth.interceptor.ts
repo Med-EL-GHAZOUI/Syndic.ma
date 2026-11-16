@@ -1,0 +1,27 @@
+import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, switchMap, throwError } from 'rxjs';
+import { AuthService } from './auth.service';
+
+const RETRIED = new HttpContextToken<boolean>(() => false);
+const PUBLIC = ['/api/auth/login', '/api/auth/refresh', '/api/auth/logout'];
+
+/** Adds the bearer token; on a 401 refreshes once (shared) and replays the request. */
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  if (!req.url.startsWith('/api') || PUBLIC.some((p) => req.url.startsWith(p))) return next(req);
+  const auth = inject(AuthService);
+  const withToken = (token: string | null) => (token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req);
+
+  return next(withToken(auth.accessToken)).pipe(
+    catchError((err: unknown) => {
+      if (!(err instanceof HttpErrorResponse) || err.status !== 401 || req.context.get(RETRIED)) return throwError(() => err);
+      return auth.refresh().pipe(
+        switchMap((token) => next(withToken(token).clone({ context: req.context.set(RETRIED, true) }))),
+        catchError((refreshErr: unknown) => {
+          auth.expire();
+          return throwError(() => refreshErr);
+        }),
+      );
+    }),
+  );
+};

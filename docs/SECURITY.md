@@ -19,6 +19,11 @@ Status legend: ✅ implemented and covered by tests · 🟡 implemented, not yet
 | **DoS** | throttler (global + auth), pagination cap 200, body-size default | 🟡 (no WAF / per-tenant quotas) |
 | **Elevation of privilege** | deny-by-default global guards; RBAC matrix identical to the UI; role/active re-read from DB each request (disable/suspend immediate); admins can't self-demote; `super_admin` not creatable via API | ✅ |
 
+## Frontend notes
+- Access token in memory only; refresh token in `sessionStorage` (readable by XSS). **Planned hardening:** httpOnly + SameSite cookie issued by the API, plus CSRF protection for the refresh endpoint. A strict CSP (`script-src 'self'`) in the nginx image limits XSS impact; Angular's template escaping is the first line of defence.
+- Refresh is single-flight (tested): parallel 401s share one rotation, otherwise the API would flag token reuse and revoke the session.
+- UI permission checks are cosmetic; the API re-checks everything.
+
 ## Known gaps (do before production)
 - ⬜ **Row-level security** in PostgreSQL as defence in depth (policy on `org_id` with `SET LOCAL app.org_id`).
 - 🟡 **Uploads**: implemented and tested — 10 MB cap, extension allow-list that must match the file's magic bytes (client MIME/name never trusted), random storage keys, sanitized display names, always `attachment` + `nosniff`, access-controlled and audited downloads. **Still missing:** antivirus scan, zip-bomb/OOXML deep inspection, private object storage with signed URLs (local disk today), per-tenant quotas.
