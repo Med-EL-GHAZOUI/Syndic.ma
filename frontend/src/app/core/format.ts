@@ -3,6 +3,15 @@ import { I18nService } from './i18n.service';
 
 const num = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+export const formatMoney = (value: number | null | undefined, lang: string): string => `${num.format(Number(value) || 0)} ${lang === 'ar' ? 'د.م.' : 'MAD'}`;
+
+export const formatDate = (value: string | null | undefined, lang: string): string => {
+  if (!value) return '—';
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA-u-nu-latn' : 'fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
+};
+
 /** 1234.5 -> "1 234,50 MAD" (or "د.م." in Arabic). Western digits in both languages. */
 @Pipe({ name: 'money', pure: false })
 export class MoneyPipe implements PipeTransform {
@@ -17,10 +26,7 @@ export class MoneyPipe implements PipeTransform {
 export class DatePipe2 implements PipeTransform {
   private readonly i18n = inject(I18nService);
   transform(value: string | null | undefined): string {
-    if (!value) return '—';
-    const d = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
-    if (Number.isNaN(d.getTime())) return '—';
-    return new Intl.DateTimeFormat(this.i18n.lang() === 'ar' ? 'ar-MA-u-nu-latn' : 'fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
+    return formatDate(value, this.i18n.lang());
   }
 }
 

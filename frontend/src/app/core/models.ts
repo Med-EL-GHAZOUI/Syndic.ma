@@ -10,6 +10,8 @@ export interface User {
   providerId: string | null;
 }
 
+export interface MfaChallenge { mfaRequired: true; mfaToken: string }
+
 /** The refresh token is never in the body: it is an HttpOnly cookie. */
 export interface TokenPair {
   accessToken: string;
@@ -55,7 +57,7 @@ export interface Complaint {
 
 export interface Announcement { id: string; residenceId: string; title: string; body: string; category: string; audience: string; pinned: boolean; authorName: string; publishedAt: string }
 export interface AuditEntry { id: string; userName?: string; role: string | null; action: string; entity: string; summary: string; createdAt: string }
-export interface OrgUser { id: string; name: string; email: string; role: Role; active: boolean; lastLoginAt: string | null }
+export interface OrgUser { id: string; name: string; email: string; role: Role; active: boolean; lastLoginAt: string | null; mfaEnabled: boolean }
 
 export type BankLineStatus = 'unmatched' | 'matched' | 'ignored';
 export interface BankSuggestion { paymentId: string; receiptNo: string | null; payerName: string; date: string; reference?: string; score: number }
@@ -67,3 +69,15 @@ export type WorkStatus = 'planned' | 'in_progress' | 'done' | 'cancelled';
 export interface WorkOrder { id: string; residenceId: string; title: string; type: 'corrective' | 'preventive'; providerId: string; scheduledDate: string; estimatedCost: number | null; actualCost: number | null; status: WorkStatus; description: string | null }
 export interface DocumentItem { id: string; residenceId: string; name: string; category: string; visibility: string; fileName: string; size: number; mime: string; createdAt: string }
 export interface ProviderFull { id: string; name: string; category: string; city?: string; contactName?: string; phone?: string; email?: string; ice?: string; rating: number; active: boolean }
+
+export type AssemblyStatus = 'planned' | 'convened' | 'held' | 'cancelled';
+export type AttendanceState = 'present' | 'proxy' | 'absent';
+export interface AssemblyItem { id: string; residenceId: string; title: string; type: 'ordinary' | 'extraordinary'; date: string; time: string; location: string; status: AssemblyStatus; agenda: string[]; minutes: string }
+export interface AttendanceRow { unitId: string; status: AttendanceState; proxyTo: string }
+export interface ResolutionRow { id: string; title: string; votesFor: number; votesAgainst: number; abstain: number; result?: 'pending' | 'adopted' | 'rejected' }
+export interface AssemblyView extends AssemblyItem { attendance: AttendanceRow[]; resolutions: ResolutionRow[]; quorum: { represented: number; total: number; ratio: number } }
+
+export interface AppNotification { id: string; type: string; params: Record<string, string | number>; link: string | null; readAt: string | null; createdAt: string }
+
+export type OrgStatus = 'trial' | 'active' | 'suspended';
+export interface Organization { id: string; name: string; city?: string; email?: string; plan: string; status: OrgStatus; createdAt: string }

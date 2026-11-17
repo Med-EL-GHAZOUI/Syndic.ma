@@ -29,9 +29,10 @@ const ROLES = ['syndic_admin', 'manager', 'accountant', 'owner', 'tenant', 'prov
             <tbody>
               @for (u of rows(); track u.id) {
                 <tr><td><div class="cell-main">{{ u.name }}</div><div class="cell-sub" dir="ltr" style="text-align:start">{{ u.email }}</div></td>
-                  <td>{{ u.role | tl: 'role' }}</td>
+                  <td>{{ u.role | tl: 'role' }}@if (u.mfaEnabled) { <span class="badge badge-info" [title]="'mfa.title' | t">{{ 'mfa.badge' | t }}</span> }</td>
                   <td><span class="badge" [class]="u.active ? 'badge-success' : 'badge-neutral'">{{ (u.active ? 'active' : 'inactive') | tl: 'providerState' }}</span></td>
-                  <td class="actions">@if (canEdit() && u.id !== me()?.id) { <button type="button" class="icon-btn" [class.danger]="u.active" (click)="toToggle.set(u)" [attr.aria-label]="(u.active ? 'users.deactivate' : 'users.activate') | t" [title]="(u.active ? 'users.deactivate' : 'users.activate') | t"><app-icon [name]="u.active ? 'ban' : 'check'" /></button> }</td></tr>
+                  <td class="actions">@if (canEdit() && u.id !== me()?.id && u.mfaEnabled) { <button type="button" class="icon-btn" (click)="toResetMfa.set(u)" [attr.aria-label]="'users.resetMfa' | t" [title]="'users.resetMfa' | t"><app-icon name="lock" /></button> }
+                    @if (canEdit() && u.id !== me()?.id) { <button type="button" class="icon-btn" [class.danger]="u.active" (click)="toToggle.set(u)" [attr.aria-label]="(u.active ? 'users.deactivate' : 'users.activate') | t" [title]="(u.active ? 'users.deactivate' : 'users.activate') | t"><app-icon [name]="u.active ? 'ban' : 'check'" /></button> }</td></tr>
               }
             </tbody>
           </table></div>
@@ -55,6 +56,10 @@ const ROLES = ['syndic_admin', 'manager', 'accountant', 'owner', 'tenant', 'prov
       </app-modal>
     }
 
+    @if (toResetMfa(); as u) {
+      <app-confirm [title]="'users.resetMfa' | t" [message]="'users.resetMfaText' | t: { name: u.name }" [danger]="true" (confirmed)="resetMfa(u)" (cancelled)="toResetMfa.set(null)" />
+    }
+
     @if (toToggle(); as u) {
       <app-confirm [title]="(u.active ? 'users.deactivate' : 'users.activate') | t" [message]="(u.active ? 'users.deactivateText' : 'users.activateText') | t: { name: u.name }" [danger]="u.active" (confirmed)="toggle(u)" (cancelled)="toToggle.set(null)" />
     }
@@ -75,6 +80,7 @@ export class UsersPage {
   protected readonly busy = signal(false);
   protected readonly open = signal(false);
   protected readonly toToggle = signal<OrgUser | null>(null);
+  protected readonly toResetMfa = signal<OrgUser | null>(null);
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -99,6 +105,11 @@ export class UsersPage {
       next: () => { this.busy.set(false); this.closeForm(); this.toast.show(this.i18n.t('common.saved')); this.load(); },
       error: this.fail,
     });
+  }
+
+  protected resetMfa(u: OrgUser): void {
+    this.toResetMfa.set(null);
+    this.http.post(`/api/users/${u.id}/mfa-reset`, {}).subscribe({ next: () => { this.toast.show(this.i18n.t('users.resetMfaDone')); this.load(); }, error: this.fail });
   }
 
   protected toggle(u: OrgUser): void {

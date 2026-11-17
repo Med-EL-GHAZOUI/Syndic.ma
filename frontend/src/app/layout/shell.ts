@@ -4,6 +4,7 @@ import { AuthService } from '../core/auth.service';
 import { I18nService, TPipe } from '../core/i18n.service';
 import { can, isResident } from '../core/permissions';
 import { IconComponent } from '../shared/icon';
+import { NotificationsBell } from '../shared/notifications-bell';
 
 interface NavItem { module: string; path: string; icon: string; key: string; residentKey?: string }
 
@@ -17,6 +18,9 @@ const NAV: NavItem[] = [
   { module: 'expenses', path: '/expenses', icon: 'receipt', key: 'nav.expenses' },
   { module: 'maintenance', path: '/maintenance', icon: 'door', key: 'nav.maintenance', residentKey: 'nav.maintenance.mine' },
   { module: 'documents', path: '/documents', icon: 'receipt', key: 'nav.documents' },
+  { module: 'assemblies', path: '/assemblies', icon: 'building', key: 'nav.assemblies' },
+  { module: 'reports', path: '/reports', icon: 'grid', key: 'nav.reports' },
+  { module: 'platform', path: '/platform', icon: 'building', key: 'nav.platform' },
   { module: 'providers', path: '/providers', icon: 'building', key: 'nav.providers' },
   { module: 'complaints', path: '/complaints', icon: 'info', key: 'nav.complaints', residentKey: 'nav.complaints.mine' },
   { module: 'announcements', path: '/announcements', icon: 'send', key: 'nav.announcements' },
@@ -27,7 +31,7 @@ const NAV: NavItem[] = [
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TPipe, IconComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TPipe, IconComponent, NotificationsBell],
   template: `
     <div class="shell" [class.nav-open]="navOpen()">
       <aside class="sidebar" id="sidebar" [attr.aria-label]="'nav.main' | t">
@@ -52,6 +56,7 @@ const NAV: NavItem[] = [
         <header class="topbar">
           <button type="button" class="icon-btn menu-toggle" (click)="navOpen.set(!navOpen())" [attr.aria-expanded]="navOpen()" aria-controls="sidebar" [attr.aria-label]="'nav.open' | t"><app-icon name="menu" /></button>
           <span class="spacer"></span>
+          @if (auth.user()?.orgId) { <app-notifications-bell /> }
           <div class="lang-switch" role="group" [attr.aria-label]="'shell.language' | t">
             <button type="button" lang="fr" [attr.aria-pressed]="i18n.lang() === 'fr'" (click)="i18n.set('fr')">FR</button>
             <button type="button" lang="ar" [attr.aria-pressed]="i18n.lang() === 'ar'" (click)="i18n.set('ar')">ع</button>

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, finalize, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
-import { TokenPair, User } from './models';
+import { MfaChallenge, TokenPair, User } from './models';
 
 // Non-secret hint ("a session probably exists") so we only call /auth/refresh when it can succeed.
 // The refresh token itself is an HttpOnly cookie set by the API: JavaScript can never read it.
@@ -32,8 +32,20 @@ export class AuthService {
     return this.access;
   }
 
-  login(email: string, password: string): Observable<User> {
-    return this.http.post<TokenPair>('/api/auth/login', { email, password }).pipe(
+  /** Emits the user, or a challenge when the account has a second factor (no session exists yet in that case). */
+  login(email: string, password: string): Observable<User | MfaChallenge> {
+    return this.http.post<TokenPair | MfaChallenge>('/api/auth/login', { email, password }).pipe(
+      switchMap((res) => {
+        if ('mfaRequired' in res) return of(res);
+        this.store(res);
+        return this.loadMe();
+      }),
+    );
+  }
+
+  /** Second step: the challenge from login() plus an authenticator code (or a recovery code). */
+  verifyMfa(mfaToken: string, code: string): Observable<User> {
+    return this.http.post<TokenPair>('/api/auth/mfa/verify', { mfaToken, code }).pipe(
       tap((t) => this.store(t)),
       switchMap(() => this.loadMe()),
     );

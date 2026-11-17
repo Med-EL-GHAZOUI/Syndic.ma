@@ -4,7 +4,7 @@ import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 const RETRIED = new HttpContextToken<boolean>(() => false);
-const PUBLIC = ['/api/auth/login', '/api/auth/refresh', '/api/auth/logout'];
+const PUBLIC = ['/api/auth/login', '/api/auth/mfa/verify', '/api/auth/refresh', '/api/auth/logout'];
 
 /** Adds the bearer token; on a 401 refreshes once (shared) and replays the request. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

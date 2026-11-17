@@ -4,6 +4,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { AuthService } from '../core/auth.service';
 import { I18nService, TPipe, TlPipe } from '../core/i18n.service';
 import { ToastService } from '../core/toast.service';
+import { MfaCard } from './mfa-card';
 
 const differs = (g: AbstractControl): ValidationErrors | null =>
   g.get('currentPassword')?.value && g.get('currentPassword')?.value === g.get('newPassword')?.value ? { same: true } : null;
@@ -12,7 +13,7 @@ const matches = (g: AbstractControl): ValidationErrors | null =>
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule, TPipe, TlPipe],
+  imports: [ReactiveFormsModule, TPipe, TlPipe, MfaCard],
   template: `
     <div class="page">
       <header class="page-header"><div><h1>{{ 'nav.settings' | t }}</h1><p class="page-sub">{{ 'settings.subtitle' | t }}</p></div></header>
@@ -51,6 +52,8 @@ const matches = (g: AbstractControl): ValidationErrors | null =>
             <div><button type="submit" class="btn btn-primary" [disabled]="busy()">{{ 'settings.changePassword' | t }}</button></div>
           </form>
         </section>
+
+        <app-mfa-card />
       </div>
     </div>
   `,
