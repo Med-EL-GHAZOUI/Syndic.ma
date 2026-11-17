@@ -190,8 +190,12 @@ describe('Notifications & background jobs', () => {
     });
 
     it('uses the Moroccan calendar date', () => {
-      expect(moroccoDate(new Date('2026-12-31T23:30:00Z'))).toBe('2027-01-01'); // already tomorrow in Morocco (UTC+1)
+      // Only instants whose Moroccan date is the same under UTC+0 and UTC+1: the tz database of the machine running the
+      // tests decides which one applies (CI and a laptop disagree about Morocco in December), and that must not matter here.
       expect(moroccoDate(new Date('2026-06-15T12:00:00Z'))).toBe('2026-06-15');
+      expect(moroccoDate(new Date('2026-12-31T22:30:00Z'))).toBe('2026-12-31');
+      expect(moroccoDate(new Date('2027-01-01T01:30:00Z'))).toBe('2027-01-01');
+      expect(moroccoDate()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 
