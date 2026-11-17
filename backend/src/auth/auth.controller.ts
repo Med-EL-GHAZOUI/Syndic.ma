@@ -3,8 +3,9 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthUser, CurrentUser, Public } from '../common/auth-user';
-import { ChangePasswordDto, ForgotPasswordDto, LoginDto, ResetPasswordDto } from './auth.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, MfaCodeDto, MfaDisableDto, MfaVerifyDto, ResetPasswordDto } from './auth.dto';
 import { AuthService } from './auth.service';
+import { MfaService } from './mfa.service';
 
 // Brute-force protection: per-IP limit on credential endpoints.
 const LIMIT = Number(process.env.THROTTLE_AUTH_LIMIT ?? 10);
@@ -52,7 +53,7 @@ function requireCsrfHeader(req: Request) {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService, private readonly mfa: MfaService) {}
 
   @Public()
   @Throttle({ default: { limit: LIMIT, ttl: 60_000 } })
@@ -60,9 +61,32 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const t = await this.auth.login(dto.email, dto.password);
+    if ('mfaRequired' in t) return t; // no session, no cookie yet: the second step comes first
     setRefreshCookie(res, t.refreshToken);
     return { accessToken: t.accessToken, expiresIn: t.expiresIn };
   }
+
+  @Public()
+  @Throttle({ default: { limit: LIMIT, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('mfa/verify')
+  async verifyMfa(@Body() dto: MfaVerifyDto, @Res({ passthrough: true }) res: Response) {
+    const t = await this.auth.loginWithMfa(dto.mfaToken, dto.code);
+    setRefreshCookie(res, t.refreshToken);
+    return { accessToken: t.accessToken, expiresIn: t.expiresIn };
+  }
+
+  @ApiBearerAuth() @Get('mfa/status')
+  mfaStatus(@CurrentUser() user: AuthUser) { return this.mfa.status(user.id); }
+
+  @ApiBearerAuth() @Throttle({ default: { limit: LIMIT, ttl: 60_000 } }) @HttpCode(200) @Post('mfa/setup')
+  mfaSetup(@CurrentUser() user: AuthUser) { return this.mfa.setup(user.id); }
+
+  @ApiBearerAuth() @Throttle({ default: { limit: LIMIT, ttl: 60_000 } }) @HttpCode(200) @Post('mfa/enable')
+  mfaEnable(@CurrentUser() user: AuthUser, @Body() dto: MfaCodeDto) { return this.mfa.enable(user.id, dto.code); }
+
+  @ApiBearerAuth() @Throttle({ default: { limit: LIMIT, ttl: 60_000 } }) @HttpCode(204) @Post('mfa/disable')
+  async mfaDisable(@CurrentUser() user: AuthUser, @Body() dto: MfaDisableDto) { await this.mfa.disable(user.id, dto.password, dto.code); }
 
   @Public()
   @Throttle({ default: { limit: LIMIT * 3, ttl: 60_000 } })

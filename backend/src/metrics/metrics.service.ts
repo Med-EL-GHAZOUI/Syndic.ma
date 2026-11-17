@@ -16,12 +16,17 @@ const key = (name: string, labels: Record<string, string>) => {
 @Injectable()
 export class MetricsService {
   private readonly counters = new Map<string, number>();
+  private readonly gauges = new Map<string, number>();
   private readonly hist = new Map<string, { buckets: number[]; sum: number; count: number }>();
   private readonly started = Date.now();
 
   inc(name: string, labels: Record<string, string> = {}, by = 1) {
     const k = key(name, labels);
     this.counters.set(k, (this.counters.get(k) ?? 0) + by);
+  }
+
+  setGauge(name: string, labels: Record<string, string>, value: number) {
+    this.gauges.set(key(name, labels), value);
   }
 
   observe(name: string, labels: Record<string, string>, seconds: number) {
@@ -64,6 +69,12 @@ export class MetricsService {
       const brace = k.indexOf('{');
       const name = brace < 0 ? k : k.slice(0, brace);
       if (!seen.has(name)) { out.push(`# TYPE ${name} counter`); seen.add(name); }
+      out.push(`${k} ${v}`);
+    }
+    for (const [k, v] of [...this.gauges].sort(([a], [b]) => a.localeCompare(b))) {
+      const brace = k.indexOf('{');
+      const name = brace < 0 ? k : k.slice(0, brace);
+      if (!seen.has(name)) { out.push(`# TYPE ${name} gauge`); seen.add(name); }
       out.push(`${k} ${v}`);
     }
     for (const [k, h] of [...this.hist].sort(([a], [b]) => a.localeCompare(b))) {

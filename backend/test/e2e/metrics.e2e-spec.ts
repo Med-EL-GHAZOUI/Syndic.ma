@@ -1,4 +1,7 @@
 import { INestApplication } from '@nestjs/common';
+import { readFileSync, readdirSync, statSync } from 'fs';
+import { join } from 'path';
+import { JobsService } from '../../src/notifications/jobs.service';
 import { bearer, buildWorld, createApp, http, loginAs, PASSWORD, refreshWith, World } from './helpers';
 
 describe('Metrics endpoint', () => {
@@ -55,5 +58,28 @@ describe('Metrics endpoint', () => {
     await refreshWith(app, s.cookie).expect(200);
     await refreshWith(app, s.cookie).expect(401); // replay of a used token
     expect(await count(/syndicma_refresh_reuse_total (\d+)/)).toBe(reuseBefore + 1);
+  });
+
+  it('background jobs report their runs and last success (what the "jobs stale / failed" alerts rely on)', async () => {
+    const before = Math.floor(Date.now() / 1000) - 1;
+    await app.get(JobsService).runOnce();
+    const body = (await scrape().expect(200)).text;
+    expect(body).toContain('# TYPE syndicma_job_runs_total counter');
+    expect(body).toMatch(/syndicma_job_runs_total\{job="overdueDigest",result="ok"\} [1-9]\d*/);
+    expect(body).toContain('# TYPE syndicma_job_last_success_timestamp_seconds gauge');
+    const ts = Number(/syndicma_job_last_success_timestamp_seconds\{job="purgeExpiredTokens"\} (\d+)/.exec(body)?.[1]);
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(body).not.toMatch(/syndicma_job_runs_total\{job="\w+",result="error"\}/); // none failed
+  });
+
+  it('every metric the alert rules mention really exists in the code (rules cannot silently drift)', () => {
+    const rules = readFileSync(join(__dirname, '..', '..', '..', 'ops', 'prometheus', 'alerts.yml'), 'utf8');
+    const used = new Set<string>(Array.from(rules.match(/syndicma_[a-z_]+/g) ?? [], (n) => n.replace(/_(bucket|sum|count)$/, '')));
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? walk(join(dir, f)) : f.endsWith('.ts') ? [readFileSync(join(dir, f), 'utf8')] : []));
+    const source = walk(join(__dirname, '..', '..', 'src')).join(String.fromCharCode(10));
+    // metric names appear as quoted strings where they are recorded, or at the start of a rendered gauge line
+    const missing = Array.from(used).filter((name) => !source.includes(`'${name}'`) && !source.includes(`${name} `));
+    expect(missing).toEqual([]);
+    expect(used.size).toBeGreaterThanOrEqual(8);
   });
 });

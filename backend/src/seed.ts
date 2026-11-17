@@ -11,7 +11,8 @@ async function main() {
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error'] });
   // Password comes from SEED_PASSWORD or is generated and printed once (never hard-coded).
   const password = process.env.SEED_PASSWORD || randomBytes(9).toString('base64url');
-  const tag = 'demo';
+  // SEED_TAG lets the browser e2e suite create a fresh, uniquely named organization on every run.
+  const tag = (process.env.SEED_TAG || 'demo').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'demo';
   const org = await seedOrg(app, password, tag);
   const sa = await seedSuperAdmin(app, password, 'super@example.com');
   console.log('Seeded organization', org.orgId);

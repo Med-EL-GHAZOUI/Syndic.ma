@@ -32,6 +32,15 @@ export class User {
   @Column({ name: 'residence_ids', type: 'uuid', array: true, default: () => "'{}'" }) residenceIds: string[];
   @Column({ name: 'provider_id', type: 'uuid', nullable: true }) providerId: string | null;
   @Column({ name: 'last_login_at', type: 'timestamptz', nullable: true }) lastLoginAt: Date | null;
+  /** AES-GCM encrypted TOTP secret (set during enrolment, active only when mfaEnabled). Never sent to clients. */
+  @Column({ name: 'mfa_secret', type: 'text', nullable: true }) mfaSecret: string | null;
+  @Column({ name: 'mfa_enabled', default: false }) mfaEnabled: boolean;
+  /** Last accepted TOTP time step: a code cannot be replayed. */
+  @Column({ name: 'mfa_last_step', type: 'int', nullable: true }) mfaLastStep: number | null;
+  /** SHA-256 of each unused one-time recovery code. */
+  @Column({ name: 'mfa_backup_codes', type: 'jsonb', default: () => "'[]'" }) mfaBackupCodes: string[];
+  @Column({ name: 'mfa_failures', type: 'int', default: 0 }) mfaFailures: number;
+  @Column({ name: 'mfa_locked_until', type: 'timestamptz', nullable: true }) mfaLockedUntil: Date | null;
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 }

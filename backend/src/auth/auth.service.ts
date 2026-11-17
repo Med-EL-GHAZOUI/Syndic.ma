@@ -9,6 +9,12 @@ import { AuditService } from '../common/audit.service';
 import { MailService } from '../mail/mail.service';
 import { MetricsService } from '../metrics/metrics.service';
 import { Organization, PasswordReset, RefreshToken, User } from '../entities';
+import { MfaService } from './mfa.service';
+
+export interface MfaChallenge {
+  mfaRequired: true;
+  mfaToken: string;
+}
 
 export interface TokenPair {
   accessToken: string;
@@ -37,13 +43,14 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
+    private readonly mfa: MfaService,
   ) {}
 
   static hashPassword(plain: string): string {
     return bcrypt.hashSync(plain, COST);
   }
 
-  async login(email: string, password: string): Promise<TokenPair> {
+  async login(email: string, password: string): Promise<TokenPair | MfaChallenge> {
     const user = await this.users.findOneBy({ email: email.trim().toLowerCase() });
     const ok = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
     // Same message for unknown user / wrong password / disabled account / suspended org.
@@ -58,6 +65,27 @@ export class AuthService {
         throw new UnauthorizedException(INVALID);
       }
     }
+    // Second factor: the password alone opens nothing. The challenge is NOT a session; it can only be exchanged for one
+    // together with a valid code.
+    if (user.mfaEnabled) {
+      this.metrics.inc('syndicma_login_total', { result: 'mfa_required' });
+      return { mfaRequired: true, mfaToken: await this.mfa.challengeFor(user) };
+    }
+    return this.complete(user);
+  }
+
+  async loginWithMfa(mfaToken: string, code: string): Promise<TokenPair> {
+    const user = await this.mfa.userFromChallenge(mfaToken);
+    if (!user.active) throw new UnauthorizedException(INVALID);
+    if (user.orgId) {
+      const org = await this.orgs.findOneBy({ id: user.orgId });
+      if (!org || org.status === 'suspended') throw new UnauthorizedException(INVALID);
+    }
+    if (!(await this.mfa.checkCode(user, code))) throw new UnauthorizedException('Invalid code');
+    return this.complete(user);
+  }
+
+  private async complete(user: User): Promise<TokenPair> {
     this.metrics.inc('syndicma_login_total', { result: 'success' });
     await this.users.update(user.id, { lastLoginAt: new Date() });
     await this.audit.log(user, 'login', 'users', user.id, user.email);

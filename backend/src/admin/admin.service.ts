@@ -6,10 +6,12 @@ import { AuthUser } from '../common/auth-user';
 import { AuditService } from '../common/audit.service';
 import { page } from '../common/pagination';
 import { ScopeService } from '../common/scope.service';
-import { AuditLog, Organization, Residence, User } from '../entities';
+import { IsNull } from 'typeorm';
+import { AuditLog, Organization, RefreshToken, Residence, User } from '../entities';
 import { AuditQuery, CreateUserDto, OrganizationDto, UpdateUserDto } from './admin.dto';
 
-const strip = ({ passwordHash, ...rest }: User) => rest;
+// Credentials never leave the API: password hash and every MFA field are removed from user payloads.
+const strip = ({ passwordHash, mfaSecret, mfaBackupCodes, mfaLastStep, mfaFailures, mfaLockedUntil, ...rest }: User) => rest;
 
 @Injectable()
 export class AdminService {
@@ -57,6 +59,16 @@ export class AdminService {
     await this.users.save(row);
     await this.audit.log(user, 'update', 'users', id, row.email);
     return strip(row);
+  }
+
+  /** A user lost their authenticator and recovery codes: an organization admin removes the second factor and all sessions. */
+  async resetMfa(user: AuthUser, id: string) {
+    const row = await this.users.findOneBy({ id, orgId: this.scope.requireOrg(user) });
+    if (!row) throw new NotFoundException('User not found');
+    if (row.id === user.id) throw new ForbiddenException('Use the two-factor settings page to change your own second factor');
+    await this.users.update(id, { mfaEnabled: false, mfaSecret: null, mfaLastStep: null, mfaBackupCodes: [], mfaFailures: 0, mfaLockedUntil: null });
+    await this.users.manager.update(RefreshToken, { userId: id, revokedAt: IsNull() }, { revokedAt: new Date() });
+    await this.audit.log(user, 'mfa_reset', 'users', id, row.email);
   }
 
   // ---- organizations (platform level, super_admin) ------------------------------------

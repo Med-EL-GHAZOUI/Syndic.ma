@@ -12,7 +12,7 @@ export interface SeededOrg {
   residenceId: string;
   unitIds: string[];
   callIds: string[];
-  users: Record<Role | 'manager2', { id: string; email: string }>;
+  users: Record<Role | 'manager2' | 'manager3', { id: string; email: string }>;
   providerId: string;
 }
 
@@ -61,6 +61,7 @@ export async function seedOrg(app: INestApplicationContext, password: string, ta
     syndic_admin: await mk('syndic_admin', 'admin'),
     manager: await mk('manager', 'manager', { residenceIds: [residence.id] }),
     manager2: await mk('manager', 'manager2', { residenceIds: [] }),
+    manager3: await mk('manager', 'manager3', { residenceIds: [] }), // reserved for two-factor browser tests
     accountant: await mk('accountant', 'accountant'),
     owner: await mk('owner', 'owner'),
     tenant: await mk('tenant', 'tenant'),

@@ -6,6 +6,7 @@ import { AuditService } from '../common/audit.service';
 import { page } from '../common/pagination';
 import { can } from '../common/permissions';
 import { ScopeService } from '../common/scope.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Complaint, Expense, Provider, WorkOrder } from '../entities';
 import { CompleteWorkDto, NoteDto, WorkOrderDto, WorkQuery } from './community.dto';
 
@@ -18,6 +19,7 @@ export class MaintenanceService {
     private readonly ds: DataSource,
     private readonly scope: ScopeService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async list(user: AuthUser, q: WorkQuery) {
@@ -56,6 +58,7 @@ export class MaintenanceService {
     }));
     if (complaint && complaint.status === 'new') await this.complaints.update({ id: complaint.id }, { status: 'in_progress' });
     await this.audit.log(user, 'create', 'maintenance', row.id, row.title);
+    await this.notifications.toProvider(orgId, row.providerId, { type: 'maintenanceAssigned', params: { title: row.title }, link: '/maintenance' });
     return row;
   }
 
@@ -69,7 +72,7 @@ export class MaintenanceService {
 
   async complete(user: AuthUser, id: string, dto: CompleteWorkDto) {
     await this.accessible(user, id);
-    return this.ds.transaction(async (m) => {
+    const result = await this.ds.transaction(async (m) => {
       const [row] = await m.query('SELECT * FROM work_orders WHERE id = $1 AND org_id = $2 FOR UPDATE', [id, user.orgId]);
       if (row.status !== 'in_progress') throw new ConflictException('Only in-progress work orders can be completed');
       const notes = dto.note ? [...row.notes, { byId: user.id, byName: user.name, at: new Date().toISOString(), text: dto.note }] : row.notes;
@@ -84,8 +87,11 @@ export class MaintenanceService {
       }
       if (row.complaint_id) await m.update(Complaint, { id: row.complaint_id, orgId: user.orgId! }, { status: 'resolved' });
       await this.audit.log(user, 'complete', 'maintenance', id, row.title, m);
-      return { id, status: 'done' };
+      return { id, status: 'done', title: row.title as string, residenceId: row.residence_id as string };
     });
+    // after the commit: telling people is best effort and must not be part of the transaction
+    await this.notifications.toStaff(user.orgId!, result.residenceId, { type: 'maintenanceDone', params: { title: result.title }, link: '/maintenance' }, ['syndic_admin', 'manager'], user.id);
+    return { id: result.id, status: result.status };
   }
 
   async cancel(user: AuthUser, id: string) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser, Perm } from '../common/auth-user';
 import { AuditQuery, CreateUserDto, OrganizationDto, UpdateUserDto } from './admin.dto';
@@ -18,6 +18,9 @@ export class AdminController {
   createUser(@CurrentUser() u: AuthUser, @Body() dto: CreateUserDto) { return this.svc.createUser(u, dto); }
   @Perm('users', 'e') @Patch('users/:id')
   updateUser(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string, @Body() dto: UpdateUserDto) { return this.svc.updateUser(u, id, dto); }
+
+  @Perm('users', 'e') @HttpCode(204) @Post('users/:id/mfa-reset')
+  resetMfa(@CurrentUser() u: AuthUser, @Param('id', uuid) id: string) { return this.svc.resetMfa(u, id); }
 
   @Perm('platform', 'v') @Get('platform/organizations')
   orgs() { return this.svc.listOrgs(); }

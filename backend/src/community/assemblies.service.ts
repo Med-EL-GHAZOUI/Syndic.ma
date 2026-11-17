@@ -7,6 +7,7 @@ import { AuditService } from '../common/audit.service';
 import { page, PageQuery } from '../common/pagination';
 import { RESIDENT_ROLES } from '../common/permissions';
 import { ScopeService } from '../common/scope.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Assembly, Unit } from '../entities';
 import { AssemblyDto, AttendanceDto, MinutesDto, ResolutionDto } from './community.dto';
 
@@ -22,6 +23,7 @@ export class AssembliesService {
     @InjectRepository(Unit) private readonly units: Repository<Unit>,
     private readonly scope: ScopeService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async list(user: AuthUser, q: PageQuery) {
@@ -69,7 +71,12 @@ export class AssembliesService {
     return { id, status: to };
   }
 
-  convene(user: AuthUser, id: string) { return this.transition(user, id, ['planned'], 'convened', 'convene'); }
+  async convene(user: AuthUser, id: string) {
+    const res = await this.transition(user, id, ['planned'], 'convened', 'convene');
+    const a = await this.repo.findOneBy({ id });
+    if (a) await this.notifications.toResidents(a.orgId, a.residenceId, { type: 'assemblyConvened', params: { title: a.title }, link: '/assemblies', dedupeKey: `assembly-convened:${id}` }, ['owner']);
+    return res;
+  }
   hold(user: AuthUser, id: string) { return this.transition(user, id, ['convened'], 'held', 'held'); }
   cancel(user: AuthUser, id: string) { return this.transition(user, id, ['planned', 'convened'], 'cancelled', 'cancel'); }
 

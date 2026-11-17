@@ -7,6 +7,7 @@ import { page, PageQuery } from '../common/pagination';
 import { PeriodService } from '../common/period.service';
 import { RESIDENT_ROLES } from '../common/permissions';
 import { ScopeService } from '../common/scope.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Announcement, Complaint, Expense, Provider } from '../entities';
 import { AnnouncementDto, CommentDto, ComplaintDto, ComplaintStatusDto, ExpenseDto, ExpenseQuery, ProviderDto } from './ops.dto';
 
@@ -20,6 +21,7 @@ export class OpsService {
     private readonly scope: ScopeService,
     private readonly audit: AuditService,
     private readonly period: PeriodService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ---- providers --------------------------------------------------------------------
@@ -130,6 +132,7 @@ export class OpsService {
       priority: dto.priority, description: dto.description, status: 'new', comments: [],
     }));
     await this.audit.log(user, 'create', 'complaints', row.id, row.title);
+    await this.notifications.toStaff(row.orgId, row.residenceId, { type: 'complaintNew', params: { title: row.title }, link: '/complaints' }, ['syndic_admin', 'manager'], user.id);
     return row;
   }
 
@@ -147,6 +150,7 @@ export class OpsService {
     row.status = dto.status;
     await this.complaints.save(row);
     await this.audit.log(user, 'update', 'complaints', id, `status ${dto.status}`);
+    await this.notifications.toUser(row.orgId, row.authorId, { type: 'complaintUpdated', params: { title: row.title }, link: '/complaints' }, user.id);
     return row;
   }
 
@@ -155,6 +159,9 @@ export class OpsService {
     if (row.status === 'closed') throw new ConflictException('Complaint is closed');
     row.comments = [...row.comments, { byId: user.id, byName: user.name, at: new Date().toISOString(), text: dto.text }];
     await this.complaints.save(row);
+    // the author is told about a staff reply; staff are told about the author's follow-up
+    if (user.id === row.authorId) await this.notifications.toStaff(row.orgId, row.residenceId, { type: 'complaintReply', params: { title: row.title }, link: '/complaints' }, ['syndic_admin', 'manager'], user.id);
+    else await this.notifications.toUser(row.orgId, row.authorId, { type: 'complaintReply', params: { title: row.title }, link: '/complaints' }, user.id);
     return row;
   }
 
@@ -170,6 +177,9 @@ export class OpsService {
     await this.scope.assertResidence(user, dto.residenceId);
     const row = await this.announcements.save(this.announcements.create({ ...dto, pinned: dto.pinned ?? false, orgId: this.scope.requireOrg(user), authorName: user.name }));
     await this.audit.log(user, 'create', 'announcements', row.id, row.title);
+    const n = { type: 'announcement', params: { title: row.title }, link: '/announcements' };
+    if (row.audience === 'staff') await this.notifications.toStaff(row.orgId, row.residenceId, n, undefined, user.id);
+    else await this.notifications.toResidents(row.orgId, row.residenceId, n, row.audience === 'owners' ? ['owner'] : undefined, user.id);
     return row;
   }
 

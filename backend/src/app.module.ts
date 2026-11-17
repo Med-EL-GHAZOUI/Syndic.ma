@@ -11,6 +11,7 @@ import { CommonModule } from './common/common.module';
 import { CommunityModule } from './community/community.module';
 import { MailModule } from './mail/mail.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { JwtAuthGuard, PermissionsGuard } from './common/guards';
 import { ENTITIES } from './entities';
 import { FinanceModule } from './finance/finance.module';
@@ -28,6 +29,8 @@ function validateEnv(env: Record<string, unknown>) {
   if (!env.DATABASE_URL) throw new Error('DATABASE_URL is required');
   if (secret.length < 32) throw new Error('JWT_ACCESS_SECRET must be set and at least 32 characters long');
   if (env.NODE_ENV === 'production' && /change-me/i.test(secret)) throw new Error('JWT_ACCESS_SECRET still has its example value');
+  // Production keeps the MFA encryption key separate from the JWT secret, so rotating one never breaks the other.
+  if (env.NODE_ENV === 'production' && String(env.MFA_ENCRYPTION_KEY ?? '').length < 32) throw new Error('MFA_ENCRYPTION_KEY must be set (32+ characters) in production');
   return env;
 }
 
@@ -51,6 +54,7 @@ function validateEnv(env: Record<string, unknown>) {
     CommonModule,
     MailModule,
     MetricsModule,
+    NotificationsModule,
     AuthModule,
     PropertiesModule,
     FinanceModule,
