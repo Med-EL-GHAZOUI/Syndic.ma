@@ -5,6 +5,12 @@ import { bearer, buildWorld, createApp, http, PASSWORD, World } from './helpers'
 
 /** Code an authenticator app would show `offset` steps from now (offset +1 is accepted: clock drift window). */
 const codeFor = (secret: string, offset = 0) => hotp(base32Decode(secret), stepAt(Date.now()) + offset);
+/**
+ * A code the API has not seen yet right after enrolment. The enrolment code is spent (single use), so the NEXT time step
+ * is needed while we are still in the same 30 s step; once the clock has moved on, the current code is already new.
+ * (A fixed "+1" breaks on a slow machine that crosses a step boundary mid-test.)
+ */
+const freshAfter = (secret: string, enrolledStep: number) => codeFor(secret, stepAt(Date.now()) === enrolledStep ? 1 : 0);
 
 describe('Two-factor authentication (TOTP)', () => {
   let app: INestApplication;
@@ -15,6 +21,8 @@ describe('Two-factor authentication (TOTP)', () => {
   const userId = () => w.a.users.accountant.id;
 
   let secret: string;
+  let enrolledStep = 0;
+  let usedCode = '';
   let backupCodes: string[];
 
   beforeAll(async () => {
@@ -53,6 +61,7 @@ describe('Two-factor authentication (TOTP)', () => {
     it('enabling needs a valid code, then returns ten recovery codes exactly once', async () => {
       await http(app).post('/api/auth/mfa/enable').set(as('a.accountant')).send({ code: '000000' }).expect(400);
       await http(app).post('/api/auth/mfa/enable').set(as('a.accountant')).send({ code: 'abcdef' }).expect(400);
+      enrolledStep = stepAt(Date.now());
       const res = (await http(app).post('/api/auth/mfa/enable').set(as('a.accountant')).send({ code: codeFor(secret) }).expect(200)).body;
       backupCodes = res.backupCodes;
       expect(backupCodes).toHaveLength(10);
@@ -95,15 +104,15 @@ describe('Two-factor authentication (TOTP)', () => {
       const t = await challenge();
       await verify(t, '000000').expect(401);
       // the code used to enable is spent (replay protection), so the next step's code is used here
-      const res = await verify(t, codeFor(secret, 1)).expect(200);
+      usedCode = freshAfter(secret, enrolledStep);
+      const res = await verify(t, usedCode).expect(200);
       expect(res.body.accessToken).toEqual(expect.any(String));
       expect((res.headers['set-cookie'] as unknown as string[]).some((c) => c.startsWith('syndicma_rt=') && c.includes('HttpOnly'))).toBe(true);
       await http(app).get('/api/auth/me').set(bearer(res.body.accessToken)).expect(200);
     });
 
     it('a code can never be used twice', async () => {
-      const code = codeFor(secret, 1); // already consumed by the previous test
-      await verify(await challenge(), code).expect(401);
+      await verify(await challenge(), usedCode).expect(401); // consumed by the previous test
     });
 
     it('recovery codes work once each, whatever the case or dashes', async () => {
@@ -175,12 +184,13 @@ describe('Two-factor authentication (TOTP)', () => {
 
     it('a user can switch it off themselves only with the password AND a valid code', async () => {
       const t0 = (await http(app).post('/api/auth/mfa/setup').set(as('a.accountant')).expect(200)).body.secret as string;
+      const t0Step = stepAt(Date.now());
       await http(app).post('/api/auth/mfa/enable').set(as('a.accountant')).send({ code: codeFor(t0) }).expect(200);
-      await http(app).post('/api/auth/mfa/disable').set(as('a.accountant')).send({ password: 'wrong-password-1', code: codeFor(t0, 1) }).expect(403);
+      await http(app).post('/api/auth/mfa/disable').set(as('a.accountant')).send({ password: 'wrong-password-1', code: freshAfter(t0, t0Step) }).expect(403);
       await http(app).post('/api/auth/mfa/disable').set(as('a.accountant')).send({ password: PASSWORD, code: '000000' }).expect(403);
-      await http(app).post('/api/auth/mfa/disable').set(as('a.accountant')).send({ password: PASSWORD, code: codeFor(t0, 1) }).expect(204);
+      await http(app).post('/api/auth/mfa/disable').set(as('a.accountant')).send({ password: PASSWORD, code: freshAfter(t0, t0Step) }).expect(204);
       expect((await http(app).get('/api/auth/mfa/status').set(as('a.accountant')).expect(200)).body.enabled).toBe(false);
-      await http(app).post('/api/auth/mfa/disable').set(as('a.accountant')).send({ password: PASSWORD, code: codeFor(t0, 1) }).expect(409);
+      await http(app).post('/api/auth/mfa/disable').set(as('a.accountant')).send({ password: PASSWORD, code: freshAfter(t0, t0Step) }).expect(409);
       expect((await login().expect(200)).body.accessToken).toBeDefined();
     });
   });
