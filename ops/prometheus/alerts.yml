@@ -1,0 +1,97 @@
+# Alert rules for the Syndic.ma API (series exposed by GET /api/metrics, see docs/DEPLOYMENT.md).
+# Thresholds are STARTING POINTS: tune them after a few weeks of real traffic. Validate with:
+#   docker run --rm -v "$PWD/ops/prometheus:/p" --entrypoint promtool prom/prometheus:v2.55.1 check rules /p/alerts.yml
+# The `job` label of the scrape config is assumed to be "syndicma-api" (see prometheus.yml next to this file).
+groups:
+  - name: syndicma-security
+    rules:
+      - alert: SyndicmaRefreshTokenReuse
+        # A refresh token presented twice: either a client bug or a stolen token (the whole session family was revoked).
+        expr: increase(syndicma_refresh_reuse_total[10m]) > 0
+        labels: { severity: critical }
+        annotations:
+          summary: "Refresh token reuse detected"
+          description: "A used refresh token was presented again ({{ $value }} in 10 min). Look at the audit log for the affected account; possible token theft."
+
+      - alert: SyndicmaFailedLoginSpike
+        # Sustained failures above ~1 every 2 seconds: credential stuffing / brute force (per-IP throttling is 10/min).
+        expr: rate(syndicma_login_total{result="failure"}[5m]) > 0.5
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Failed logins are unusually frequent"
+          description: "{{ $value | printf \"%.2f\" }} failed logins per second for 10 minutes."
+
+      - alert: SyndicmaSecondFactorFailures
+        # Wrong two-factor codes: someone knows a password and is guessing codes (accounts lock after 5 attempts).
+        expr: rate(syndicma_login_total{result="mfa_failure"}[10m]) > 0.05
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Repeated wrong two-factor codes"
+          description: "A password is known to someone who does not have the authenticator. Check the audit log and lock the account if needed."
+
+      - alert: SyndicmaPasswordResetBurst
+        expr: increase(syndicma_password_reset_requests_total[15m]) > 20
+        labels: { severity: warning }
+        annotations:
+          summary: "Many password-reset requests"
+          description: "{{ $value }} reset requests in 15 minutes (the per-account limit is 3 per hour)."
+
+  - name: syndicma-availability
+    rules:
+      - alert: SyndicmaApiDown
+        expr: up{job="syndicma-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "The API cannot be scraped"
+          description: "Prometheus could not scrape /api/metrics for 2 minutes (API down, wrong METRICS_TOKEN, or network)."
+
+      - alert: SyndicmaServerErrors
+        expr: |
+          sum(rate(syndicma_http_requests_total{status="5xx"}[5m]))
+            / clamp_min(sum(rate(syndicma_http_requests_total[5m])), 0.001) > 0.01
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "More than 1 % of requests fail with a 5xx"
+          description: "{{ $value | humanizePercentage }} of requests ended in a server error over 5 minutes."
+
+      - alert: SyndicmaSlowRequests
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(syndicma_http_request_duration_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "95th percentile latency above 1 s"
+          description: "p95 is {{ $value | printf \"%.2f\" }} s for 10 minutes."
+
+      - alert: SyndicmaHighMemory
+        expr: syndicma_process_resident_memory_bytes > 1.5e9
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "API memory above 1.5 GB"
+          description: "Resident memory is {{ $value | humanize1024 }}B (possible leak)."
+
+  - name: syndicma-jobs
+    rules:
+      - alert: SyndicmaJobFailed
+        expr: increase(syndicma_job_runs_total{result="error"}[1h]) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: "Background job {{ $labels.job }} failed"
+          description: "See the API logs for the error. Failures are logged, not retried until the next run."
+
+      - alert: SyndicmaJobsStale
+        # Jobs run every 15 minutes by default. No success for 2 hours = jobs are off, stuck, or the API keeps restarting.
+        # If you run with JOBS_ENABLED=false on purpose, silence this alert.
+        expr: |
+          (time() - max by (job) (syndicma_job_last_success_timestamp_seconds)) > 7200
+          or absent(syndicma_job_last_success_timestamp_seconds{job="overdueDigest"})
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Background jobs have not succeeded for 2 hours"
+          description: "Overdue digests, assembly reminders and purges are not running."

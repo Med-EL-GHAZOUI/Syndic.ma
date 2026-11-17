@@ -20,6 +20,8 @@ Demo accounts are listed on the login screen; the password is `demo1234`.
 ## Stack (Phases 4+)
 `backend/` NestJS + PostgreSQL API · `frontend/` Angular 20 app (partial: login/reset, dashboard, residences, units, finance, payments, bank reconciliation, expenses, complaints, announcements, documents, maintenance, providers, users, audit, settings — assemblies, reports and platform admin still only in the prototype) · root `docker-compose.yml` for the full stack. See `backend/README.md`, `docs/DEPLOYMENT.md`, `docs/PRODUCT.md`. The vanilla prototype below remains the reference UI for modules not yet ported.
 
+Browser end-to-end tests: `e2e/` (Playwright, system Chrome) — see `e2e/README.md`.
+
 ## Layout (vanilla prototype)
 
 ```

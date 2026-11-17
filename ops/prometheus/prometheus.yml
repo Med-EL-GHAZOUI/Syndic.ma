@@ -1,0 +1,24 @@
+# Example Prometheus configuration for Syndic.ma. Adapt targets and file paths to your environment.
+# Create the token file on the Prometheus host (same value as METRICS_TOKEN on the API), mode 0400:
+#   /etc/prometheus/syndicma-metrics-token
+# Scrape the API from INSIDE the private network: /api/metrics must not be reachable through the public proxy.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: syndicma-api
+    metrics_path: /api/metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/syndicma-metrics-token
+    static_configs:
+      - targets: ["api:3000"]

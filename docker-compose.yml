@@ -1,5 +1,5 @@
 # Full stack (PostgreSQL + API + web). Secrets come from the environment — nothing is hard-coded:
-#   POSTGRES_PASSWORD=... JWT_ACCESS_SECRET=... docker compose up -d --build
+#   POSTGRES_PASSWORD=... JWT_ACCESS_SECRET=... MFA_ENCRYPTION_KEY=... docker compose up -d --build
 #   SUPERADMIN_EMAIL=... SUPERADMIN_PASSWORD=... docker compose run --rm -e SUPERADMIN_EMAIL -e SUPERADMIN_PASSWORD api node dist/create-super-admin.js
 # Generate secrets with:  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 services:
@@ -24,6 +24,8 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgres://syndicma:${POSTGRES_PASSWORD}@db:5432/syndicma
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET (>= 32 random chars)}
+      # Encrypts the two-factor secrets at rest. Keep it separate from the JWT secret; losing it makes enrolled authenticators unusable.
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?set MFA_ENCRYPTION_KEY (>= 32 random chars)}
       # Refresh cookie is Secure in production (HTTPS only, except localhost). Set to false only for plain-HTTP tests.
       COOKIE_SECURE: ${COOKIE_SECURE:-}
       # Password-reset e-mails (production requires SMTP) and the public URL used in their links

@@ -1,0 +1,18 @@
+# Example Alertmanager routing. The receiver below is a PLACEHOLDER: choose the real channel (e-mail, chat, pager)
+# and keep its credentials out of the repository. Which provider to use is an operational decision.
+route:
+  receiver: team
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: [severity="critical"]
+      receiver: team
+      repeat_interval: 1h
+
+receivers:
+  - name: team
+    webhook_configs:
+      - url: http://localhost:9999/alerts   # replace with your real notifier
+        send_resolved: true
