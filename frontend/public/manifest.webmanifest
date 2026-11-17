@@ -1,0 +1,20 @@
+{
+  "name": "Syndic.ma — gestion de copropriété",
+  "short_name": "Syndic.ma",
+  "description": "Charges, paiements, assemblées, réclamations et documents de votre copropriété, en français et en arabe.",
+  "lang": "fr",
+  "dir": "auto",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f3ee",
+  "theme_color": "#0f5c4d",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

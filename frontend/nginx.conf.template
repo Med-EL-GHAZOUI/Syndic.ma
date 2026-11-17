@@ -1,3 +1,19 @@
+# HSTS must only be sent over HTTPS. TLS is terminated by the proxy in front (it sets X-Forwarded-Proto), so the header is
+# emitted only for requests that arrived as https; over plain HTTP the value is empty and nginx omits the header.
+map $http_x_forwarded_proto $hsts_value {
+  default "";
+  https   "max-age=31536000; includeSubDomains";
+}
+
+# The service worker, its file-hash manifest, the web manifest and index.html decide WHICH release runs: always revalidate them,
+# or users could be stuck on an old version. Hashed bundles never change, so they cache hard. ($uri is the final internal URI,
+# so the SPA fallback to /index.html is covered too.) An empty value makes nginx omit the header.
+map $uri $cache_control {
+  default "";
+  ~^/(ngsw-worker\.js|ngsw\.json|safety-worker\.js|manifest\.webmanifest|index\.html)$ "no-cache";
+  ~^/[^/]+\.(js|css)$ "public, max-age=31536000, immutable";
+}
+
 server {
   listen 8080;
   server_tokens off;
@@ -10,8 +26,8 @@ server {
   add_header X-Frame-Options "DENY" always;
   add_header Referrer-Policy "no-referrer" always;
   add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
-  # Enable once the site is served over HTTPS:
-  # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  add_header Strict-Transport-Security $hsts_value always;
+  add_header Cache-Control $cache_control always;
 
   location /api/ {
     resolver 127.0.0.11 valid=10s;
@@ -21,6 +37,13 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
     client_max_body_size 11m;
+  }
+
+  # nginx's mime.types has no entry for .webmanifest; browsers require this exact type. (default_type, not add_header, so the
+  # server-level security headers still apply to this response.)
+  location = /manifest.webmanifest {
+    default_type application/manifest+json;
+    try_files $uri =404;
   }
 
   location / {
