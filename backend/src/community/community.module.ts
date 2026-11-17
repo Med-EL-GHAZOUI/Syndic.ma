@@ -6,10 +6,11 @@ import { CommunityController } from './community.controller';
 import { DocumentsService } from './documents.service';
 import { MaintenanceService } from './maintenance.service';
 import { StorageService } from './storage.service';
+import { VirusScanService } from './virus-scan.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([WorkOrder, Assembly, DocumentFile, Provider, Complaint, Unit])],
   controllers: [CommunityController],
-  providers: [MaintenanceService, AssembliesService, DocumentsService, StorageService],
+  providers: [MaintenanceService, AssembliesService, DocumentsService, StorageService, VirusScanService],
 })
 export class CommunityModule {}

@@ -10,6 +10,7 @@ import { DocumentFile } from '../entities';
 import { DocumentUploadDto } from './community.dto';
 import { detectUpload, MAX_UPLOAD_BYTES, sanitizeFileName } from './file-validation';
 import { StorageService } from './storage.service';
+import { VirusScanService } from './virus-scan.service';
 
 const audiencesFor = (role: AuthUser['role']) => (role === 'owner' ? ['all', 'owners'] : role === 'tenant' ? ['all'] : ['all', 'owners', 'staff']);
 
@@ -20,6 +21,7 @@ export class DocumentsService {
     private readonly storage: StorageService,
     private readonly scope: ScopeService,
     private readonly audit: AuditService,
+    private readonly scanner: VirusScanService,
   ) {}
 
   async list(user: AuthUser, q: PageQuery) {
@@ -35,6 +37,14 @@ export class DocumentsService {
     await this.scope.assertResidence(user, dto.residenceId);
     const detected = detectUpload(file.buffer, file.originalname);
     if (!detected) throw new UnsupportedMediaTypeException('File type not allowed or content does not match its extension');
+
+    // Before anything is written: an infected file never reaches the disk or the database.
+    try {
+      await this.scanner.assertClean(file.buffer);
+    } catch (err) {
+      await this.audit.log(user, 'reject', 'documents', dto.residenceId, `${sanitizeFileName(file.originalname)}: ${(err as Error).message}`);
+      throw err;
+    }
 
     const orgId = this.scope.requireOrg(user);
     const storageKey = `${orgId}/${randomUUID()}`;
