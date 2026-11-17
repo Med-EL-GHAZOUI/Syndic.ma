@@ -36,7 +36,21 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run build
       - run: npm test
-      - run: npm run test:e2e
+      - name: API tests (e2e, against PostgreSQL)
+        shell: bash
+        run: |
+          set +e
+          npm run test:e2e 2>&1 | tee e2e.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # Surface the first failures as an annotation (readable on the run page and through the API without signing in)
+            msg=$(awk '/●/{f=1} f' e2e.log | head -60 | sed 's/%/%25/g' | sed ':a;N;$!ba;s///g;s/
+/%0A/g')
+            [ -z "$msg" ] && msg=$(head -60 e2e.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s///g;s/
+/%0A/g')
+            echo "::error title=API tests failed::$msg"
+          fi
+          exit $code
       - name: Dependency audit (production deps)
         run: npm audit --omit=dev --audit-level=high
 
