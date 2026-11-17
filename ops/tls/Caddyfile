@@ -1,0 +1,9 @@
+# Example TLS front for Syndic.ma (Caddy obtains and renews Let's Encrypt certificates by itself).
+# Replace the domain by yours (its DNS must point at this server, ports 80 and 443 open), or set DOMAIN in .env.
+# Used with: docker compose -f docker-compose.yml -f ops/tls/docker-compose.tls.yml up -d
+{$DOMAIN} {
+	encode zstd gzip
+	# The web container (nginx) serves the Angular app and proxies /api to the API: one origin, which the
+	# SameSite=Strict refresh cookie needs. X-Forwarded-Proto is set automatically by Caddy.
+	reverse_proxy web:8080
+}

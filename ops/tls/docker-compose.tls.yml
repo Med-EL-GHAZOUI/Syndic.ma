@@ -1,0 +1,21 @@
+# Override that puts a TLS-terminating proxy in front of the stack. Not run in CI: it needs a real public domain.
+#   DOMAIN=syndic.example.com docker compose -f docker-compose.yml -f ops/tls/docker-compose.tls.yml up -d
+services:
+  web:
+    ports: !reset []        # only the proxy is exposed; the web container is reachable on the internal network only
+  caddy:
+    image: caddy:2
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN (public host name)}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ops/tls/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  caddydata:
